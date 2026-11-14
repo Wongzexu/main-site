@@ -337,6 +337,9 @@
     cursor:pointer;
   }
   .tui-row .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tui-row.dir .n{color:#8FE9D6}
+  .tui-row.dir.sel .n{color:#0A2A23}
+  .tui-row.up .n{color:#7FB4A6}
   .tui-row .s,.tui-row .d{color:#6E9E90;font-variant-numeric:tabular-nums;white-space:nowrap}
   .tui-row:hover{background:rgba(95,227,201,.07)}
   .tui-row.sel{background:#5FE3C9;color:#06120F}
@@ -438,16 +441,17 @@
       </form>
       <div class="term-tui" id="termTui">
         <div class="tui-head">
-          <span>SJDHQTL <b>/dl</b></span>
+          <span>SJDHQTL <b id="tuiPath">/dl</b></span>
           <span id="tuiMeta">loading…</span>
         </div>
         <div class="tui-cols" aria-hidden="true"><span>name</span><span>size</span><span>modified</span></div>
         <div class="tui-list" id="tuiList" tabindex="0" role="listbox" aria-label="下载文件列表"></div>
         <div class="tui-foot">
           <span><b>↑↓</b> select</span>
-          <span><b>⏎</b> download</span>
-          <span><b>r</b> refresh</span>
-          <span><b>q</b> back</span>
+          <span><b>⏎</b> open</span>
+          <span><b>⌫</b> up</span>
+          <span><b>Ctrl+R</b> refresh</span>
+          <span><b>Ctrl+Q</b> back</span>
         </div>
       </div>
     </div>
@@ -499,7 +503,9 @@
   let tuiFiles = [];
   let tuiSel = 0;
   let tuiSeq = 0;
-  let tuiPrevMax = false;
+  let tuiPath = [];
+  const tuiPathEl = document.getElementById('tuiPath');
+  const tuiWhere = () => '/dl' + (tuiPath.length ? '/' + tuiPath.join('/') : '');
 
   function fmtSize(n) {
     if (!n) return '0 B';
@@ -531,8 +537,25 @@
 
   function downloadRow() {
     const f = tuiFiles[tuiSel];
+    if (!f || f.type !== 'file') return;
+    const rel = [...tuiPath, f.name].map(encodeURIComponent).join('/');
+    location.href = '/files/' + rel;
+  }
+
+  function openSelected() {
+    const f = tuiFiles[tuiSel];
     if (!f) return;
-    location.href = '/files/' + encodeURIComponent(f.name);
+    if (f.type === 'up') {
+      tuiPath.pop();
+      loadTui();
+      return;
+    }
+    if (f.type === 'directory') {
+      tuiPath.push(f.name);
+      loadTui();
+      return;
+    }
+    downloadRow();
   }
 
   function renderTui() {
@@ -540,22 +563,30 @@
     if (!tuiFiles.length) {
       const e = document.createElement('div');
       e.className = 'tui-empty';
-      e.textContent = 'no files in /dl';
+      e.textContent = 'empty directory';
       tuiList.append(e);
-      tuiMeta.textContent = '0 files';
+      tuiMeta.textContent = '0 items';
       return;
     }
-    const total = tuiFiles.reduce((a, f) => a + (f.size || 0), 0);
-    tuiMeta.textContent = tuiFiles.length + ' file' + (tuiFiles.length > 1 ? 's' : '') + ' · ' + fmtSize(total);
+    const dirs = tuiFiles.filter((f) => f.type === 'directory').length;
+    const filesN = tuiFiles.filter((f) => f.type === 'file').length;
+    const total = tuiFiles.reduce((a, f) => a + (f.type === 'file' ? (f.size || 0) : 0), 0);
+    const parts = [];
+    if (dirs) parts.push(dirs + ' dir' + (dirs > 1 ? 's' : ''));
+    parts.push(filesN + ' file' + (filesN > 1 ? 's' : ''));
+    tuiMeta.textContent = parts.join(' · ') + ' · ' + fmtSize(total);
     tuiFiles.forEach((f, i) => {
       const row = document.createElement('div');
-      row.className = 'tui-row';
+      row.className = 'tui-row' + (f.type === 'directory' ? ' dir' : '') + (f.type === 'up' ? ' up' : '');
       row.id = 'tui-row-' + i;
       row.dataset.i = i;
       row.setAttribute('role', 'option');
-      const n = document.createElement('span'); n.className = 'n'; n.textContent = f.name;
-      const z = document.createElement('span'); z.className = 's'; z.textContent = fmtSize(f.size);
-      const d = document.createElement('span'); d.className = 'd'; d.textContent = fmtDate(f.mtime);
+      const n = document.createElement('span'); n.className = 'n';
+      n.textContent = f.type === 'directory' ? f.name + '/' : f.name;
+      const z = document.createElement('span'); z.className = 's';
+      z.textContent = f.type === 'directory' ? 'DIR' : f.type === 'file' ? fmtSize(f.size) : '';
+      const d = document.createElement('span'); d.className = 'd';
+      d.textContent = f.type === 'up' ? '' : fmtDate(f.mtime);
       row.append(n, z, d);
       tuiList.append(row);
     });
@@ -564,31 +595,40 @@
 
   async function loadTui() {
     const seq = ++tuiSeq;
+    const where = tuiWhere();
     tuiMeta.textContent = 'loading…';
     tuiList.replaceChildren();
     const e = document.createElement('div');
     e.className = 'tui-empty';
     e.textContent = 'loading…';
     tuiList.append(e);
+    const sub = tuiPath.map(encodeURIComponent).join('/');
     try {
-      const r = await fetch('/api/list/', { headers: { Accept: 'application/json' } });
+      const r = await fetch('/api/list/' + (sub ? sub + '/' : ''), { headers: { Accept: 'application/json' } });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
       const arr = await r.json();
       if (seq !== tuiSeq) return;
-      tuiFiles = arr.filter((x) => x.type === 'file' && x.name !== 'index.html');
+      const items = arr
+        .filter((x) => (x.type === 'file' || x.type === 'directory') && x.name !== 'index.html')
+        .map((x) => ({ name: x.name, type: x.type, size: x.size, mtime: x.mtime }))
+        .sort((a, b) => (a.type === b.type
+          ? a.name.localeCompare(b.name, 'zh')
+          : a.type === 'directory' ? -1 : 1));
+      tuiFiles = tuiPath.length ? [{ name: '..', type: 'up' }, ...items] : items;
       tuiSel = 0;
+      tuiPathEl.textContent = where;
       renderTui();
-    } catch {
+    } catch (err) {
       if (seq !== tuiSeq) return;
       tuiMeta.textContent = 'failed to load';
-      e.textContent = 'failed to load /dl';
+      e.textContent = 'failed to load ' + where + ' — ' + err.message;
     }
   }
 
   function enterTui() {
     if (dlg.classList.contains('tui')) return;
-    tuiPrevMax = maximized;
     dlg.classList.add('tui');
-    setMax(true, false);
+    tuiPath = [];
     loadTui();
     tuiList.focus({ preventScroll: true });
   }
@@ -596,7 +636,7 @@
   function exitTui() {
     if (!dlg.classList.contains('tui')) return;
     dlg.classList.remove('tui');
-    setMax(tuiPrevMax, false);
+    tuiPath = [];
     input.focus({ preventScroll: true });
     body.scrollTop = body.scrollHeight;
   }
@@ -604,20 +644,26 @@
   dlg.addEventListener('keydown', (e) => {
     if (!dlg.classList.contains('tui')) return;
     const onButton = !!e.target.closest('button');
+    const ctrl = e.ctrlKey || e.metaKey;
     const k = e.key;
-    if (k === 'ArrowDown' || k === 'j') { e.preventDefault(); selectRow(tuiSel + 1, true); }
-    else if (k === 'ArrowUp' || k === 'k') { e.preventDefault(); selectRow(tuiSel - 1, true); }
+    if (k === 'ArrowDown') { e.preventDefault(); selectRow(tuiSel + 1, true); }
+    else if (k === 'ArrowUp') { e.preventDefault(); selectRow(tuiSel - 1, true); }
     else if (k === 'Home') { e.preventDefault(); selectRow(0, true); }
     else if (k === 'End') { e.preventDefault(); selectRow(tuiFiles.length - 1, true); }
     else if (k === 'PageDown') { e.preventDefault(); selectRow(tuiSel + 10, true); }
     else if (k === 'PageUp') { e.preventDefault(); selectRow(tuiSel - 10, true); }
+    else if (k === 'Backspace' && tuiPath.length) {
+      e.preventDefault();
+      tuiPath.pop();
+      loadTui();
+    }
     else if (k === 'Enter') {
       if (onButton) return;
       e.preventDefault();
-      downloadRow();
+      openSelected();
     }
-    else if (k === 'r' || k === 'R') { e.preventDefault(); loadTui(); }
-    else if (k === 'q' || k === 'Q') { e.preventDefault(); exitTui(); }
+    else if (ctrl && (k === 'r' || k === 'R')) { e.preventDefault(); loadTui(); }
+    else if (ctrl && (k === 'q' || k === 'Q')) { e.preventDefault(); exitTui(); }
   });
   tuiList.addEventListener('click', (e) => {
     const row = e.target.closest('.tui-row');
@@ -714,6 +760,7 @@
     dlg.classList.remove('tui');
     tuiSeq++;
     tuiFiles = [];
+    tuiPath = [];
     log.replaceChildren();
     input.value = '';
     input.disabled = false;
