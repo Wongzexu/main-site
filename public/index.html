@@ -360,6 +360,7 @@
       ['cd /dl', 'enter the download center'],
       ['cd /files', 'open the file list'],
       ['cd /', 'back to home (closes this window)'],
+      ['exit', 'close this window'],
       ['clear', 'clear the screen'],
     ];
     for (const [c, d] of cmds) rich([['  ' + c.padEnd(11), 'cmd'], [d, 'dim']]);
@@ -388,6 +389,7 @@
     const low = text.toLowerCase();
 
     if (low === '--help' || low === 'help') return help();
+    if (low === 'exit') { line('logout', 'dim'); return closeTerm(); }
     if (low === 'ls') return line('/dl/   /files/', 'dim');
     if (low === 'pwd') return line('/', 'dim');
     if (low === 'clear') { log.replaceChildren(); return; }
@@ -452,8 +454,16 @@
     }
   });
   closeBtn.addEventListener('click', closeTerm);
-  dlg.addEventListener('click', (e) => { if (e.target === dlg) closeTerm(); });
-  dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeTerm(); });
+  // 点外部区域不关闭，只把焦点送回提示符；退出只有「红点」或 exit / cd /
+  dlg.addEventListener('click', (e) => {
+    if (e.target === dlg || (body.contains(e.target) && !closeBtn.contains(e.target))) {
+      input.focus({ preventScroll: true });
+    }
+  });
+  dlg.addEventListener('cancel', (e) => {
+    e.preventDefault();
+    input.focus({ preventScroll: true });
+  });
   dlg.addEventListener('close', () => { link.focus({ preventScroll: true }); });
   link.addEventListener('click', (e) => {
     if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
