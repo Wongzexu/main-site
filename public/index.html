@@ -665,18 +665,6 @@
     else if (ctrl && (k === 'r' || k === 'R')) { e.preventDefault(); loadTui(); }
     else if (ctrl && (k === 'q' || k === 'Q')) { e.preventDefault(); exitTui(); }
   });
-  // 滚轮：移动选中项而不是单独滚动视图，保证回车目标始终可见
-  let wheelAcc = 0;
-  tuiList.addEventListener('wheel', (e) => {
-    if (!dlg.classList.contains('tui') || !tuiFiles.length) return;
-    e.preventDefault();
-    wheelAcc += e.deltaY * (e.deltaMode === 1 ? 16 : 1);
-    const step = 48;
-    let guard = 24;
-    while (wheelAcc >= step && guard--) { selectRow(tuiSel + 1, true); wheelAcc -= step; }
-    while (wheelAcc <= -step && guard--) { selectRow(tuiSel - 1, true); wheelAcc += step; }
-  }, { passive: false });
-
   tuiList.addEventListener('click', (e) => {
     const row = e.target.closest('.tui-row');
     if (!row) return;
