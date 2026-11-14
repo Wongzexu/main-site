@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>下载中心</title>
+<style>
+  body{font-family:system-ui,sans-serif;max-width:900px;margin:32px auto;padding:0 16px;color:#222}
+  h1{font-size:22px;margin:0 0 4px}
+  .sub{color:#666;font-size:13px;margin-bottom:16px}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  input{padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:14px}
+  button{padding:6px 10px;border:1px solid #ccc;background:#f7f7f7;border-radius:6px;cursor:pointer;font-size:13px}
+  button.del{color:#b00020;border-color:#e6b3b3;background:#fff5f5}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{padding:8px 6px;border-bottom:1px solid #eee;text-align:left;vertical-align:top}
+  th{color:#666;font-weight:500;font-size:12px}
+  td.n{word-break:break-all}
+  a{color:#0b61c9;text-decoration:none}
+  .muted{color:#999}
+  .actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+  #qrbox{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:10}
+  #qrbox.on{display:flex}
+  .card{background:#fff;border-radius:10px;padding:16px;max-width:320px;width:100%;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.2)}
+  .card .name{font-size:13px;color:#333;word-break:break-all;margin-bottom:10px}
+  #qrimg{display:flex;justify-content:center}
+  #qrimg img,#qrimg canvas{max-width:100%;height:auto}
+  .card .url{font-size:11px;color:#888;word-break:break-all;margin-top:8px}
+</style>
+<h1>下载中心</h1>
+<div class="sub">文件目录 <code>/srv/downloads/files</code> · <a href="/files/">浏览文件列表</a> · 删除需要密码</div>
+
+<div class="bar">
+  <input id="pw" type="password" placeholder="删除密码" autocomplete="off">
+  <button id="save">保存密码</button>
+  <button id="refresh">刷新</button>
+</div>
+
+<table>
+  <thead><tr><th>文件名</th><th style="width:90px">大小</th><th style="width:160px">时间</th><th style="width:140px"></th></tr></thead>
+  <tbody id="rows"><tr><td colspan="4" class="muted">加载中…</td></tr></tbody>
+</table>
+
+<div id="qrbox" onclick="if(event.target===this)closeQR()">
+  <div class="card">
+    <div class="name" id="qrname"></div>
+    <div id="qrimg"></div>
+    <div class="url" id="qrurl"></div>
+    <div style="margin-top:12px"><button onclick="closeQR()">关闭</button></div>
+  </div>
+</div>
+
+<script src="/assets/qrcode.min.js"></script>
+<script>
+const USER = 'admin';
+const KEY = 'dl_pass';
+const rows = document.getElementById('rows');
+
+function fmt(n){
+  if(!n) return '0 B';
+  if(n < 1024) return n + ' B';
+  const u = ['KB','MB','GB','TB']; let i = -1;
+  do { n /= 1024; i++; } while (n >= 1024 && i < u.length - 1);
+  return n.toFixed(1) + ' ' + u[i];
+}
+
+async function load(){
+  rows.innerHTML = '<tr><td colspan="4" class="muted">加载中…</td></tr>';
+  try {
+    const r = await fetch('/api/list/', {headers:{'Accept':'application/json'}});
+    const arr = await r.json();
+    const files = arr.filter(x => x.type === 'file' && x.name !== 'index.html');
+    if (!files.length) {
+      rows.innerHTML = '<tr><td colspan="4" class="muted">（暂无文件）</td></tr>';
+      return;
+    }
+    rows.innerHTML = '';
+    for (const f of files) {
+      const tr = document.createElement('tr');
+
+      const td1 = document.createElement('td');
+      td1.className = 'n';
+      const a = document.createElement('a');
+      a.href = '/files/' + encodeURIComponent(f.name);
+      a.textContent = f.name;
+      td1.appendChild(a);
+
+      const td2 = document.createElement('td');
+      td2.className = 'muted';
+      td2.textContent = fmt(f.size);
+
+      const td3 = document.createElement('td');
+      td3.className = 'muted';
+      td3.textContent = (f.mtime || '').replace(' GMT','');
+
+      const td4 = document.createElement('td');
+      td4.className = 'actions';
+      const qbtn = document.createElement('button');
+      qbtn.textContent = '二维码';
+      qbtn.onclick = () => showQR(f.name);
+      const btn = document.createElement('button');
+      btn.className = 'del';
+      btn.textContent = '删除';
+      btn.onclick = () => del(f.name);
+      td4.append(qbtn, btn);
+
+      tr.append(td1, td2, td3, td4);
+      rows.appendChild(tr);
+    }
+  } catch (e) {
+    rows.innerHTML = '<tr><td colspan="4" class="muted">加载失败</td></tr>';
+  }
+}
+
+function showQR(name){
+  const url = location.origin + '/files/' + encodeURIComponent(name);
+  document.getElementById('qrname').textContent = name;
+  document.getElementById('qrurl').textContent = url;
+  const box = document.getElementById('qrimg');
+  box.innerHTML = '';
+  new QRCode(box, {text: url, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M});
+  document.getElementById('qrbox').classList.add('on');
+}
+
+function closeQR(){
+  document.getElementById('qrbox').classList.remove('on');
+}
+
+async function del(name){
+  let pw = sessionStorage.getItem(KEY);
+  if (!pw) {
+    pw = prompt('输入删除密码：');
+    if (!pw) return;
+    sessionStorage.setItem(KEY, pw);
+  }
+  if (!confirm('确定删除 ' + name + ' ?')) return;
+  const r = await fetch('/files/' + encodeURIComponent(name), {
+    method: 'DELETE',
+    headers: {Authorization: 'Basic ' + btoa(USER + ':' + pw)}
+  });
+  if (r.ok || r.status === 204) {
+    load();
+  } else if (r.status === 401) {
+    sessionStorage.removeItem(KEY);
+    alert('密码错误');
+  } else {
+    alert('删除失败：HTTP ' + r.status);
+  }
+}
+
+document.getElementById('save').onclick = () => {
+  const v = document.getElementById('pw').value.trim();
+  if (!v) { alert('请输入密码'); return; }
+  sessionStorage.setItem(KEY, v);
+  document.getElementById('pw').value = '';
+  alert('已保存（本标签页有效）');
+};
+document.getElementById('refresh').onclick = load;
+load();
+</script>
