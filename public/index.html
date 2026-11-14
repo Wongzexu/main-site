@@ -140,22 +140,21 @@
 
   .term-dialog{
     width:min(680px,92vw);
+    height:min(56svh,400px);
     max-width:none;
-    max-height:86svh;
+    max-height:none;
     padding:0;
     border:0;
     background:transparent;
     color:#CDEFE4;
     overflow:visible;
-    transition:width .28s cubic-bezier(.2,.8,.2,1),height .28s cubic-bezier(.2,.8,.2,1);
+    transition:width .32s cubic-bezier(.2,.8,.2,1),height .32s cubic-bezier(.2,.8,.2,1);
   }
-  /* 最大化：铺满视口，上限 1920×1080 */
+  /* 最大化：铺满视口，上限 1920×1080，保留圆角 */
   .term-dialog.max{
     width:min(1920px,100vw);
     height:min(1080px,100vh);
-    max-height:none;
   }
-  .term-dialog.max .term{height:100%;border-radius:0}
   .term-dialog::backdrop{
     background:rgba(38,28,16,.26);
     -webkit-backdrop-filter:blur(3px) saturate(.9);
@@ -175,7 +174,7 @@
     position:relative;
     display:flex;
     flex-direction:column;
-    height:min(56svh,400px);
+    height:100%;
     border-radius:12px;
     background:#08120F;
     border:1px solid rgba(120,230,200,.22);
@@ -188,7 +187,6 @@
     line-height:1.65;
     overflow:hidden;
     color-scheme:dark;
-    transition:height .28s cubic-bezier(.2,.8,.2,1),border-radius .28s;
   }
   /* CRT 扫描线 */
   .term::after{
@@ -210,6 +208,7 @@
     border-bottom:1px solid rgba(120,230,200,.12);
   }
   .dot{
+    position:relative;
     flex:none;
     width:10px;
     height:10px;
@@ -221,12 +220,12 @@
   .dot.red{background:#E5695B}
   .dot.yellow{background:#E0B354}
   .dot.green{background:#5FBF7A}
-  /* 左上角红点：扩大点击热区，视觉仍是 10px */
-  button.dot{position:relative;cursor:pointer}
+  /* 左上角红绿灯：扩大点击热区，视觉仍是 10px */
+  button.dot{cursor:pointer}
   button.dot::after{content:"";position:absolute;inset:-9px;border-radius:50%}
   button.dot:focus-visible{outline:2px solid rgba(255,255,255,.75);outline-offset:3px}
-  /* macOS 手感：悬停标题栏时红点里浮出 × */
-  .dot.red::before{
+  /* macOS 手感：悬停标题栏时浮出 × / − / + */
+  .dot::before{
     content:"";
     position:absolute;
     inset:0;
@@ -235,11 +234,14 @@
     font-size:9px;
     line-height:1;
     font-weight:700;
-    color:rgba(70,12,8,.75);
+    color:rgba(35,20,8,.62);
     opacity:0;
     transition:opacity .15s;
   }
   .term-bar:hover .dot.red::before{content:"×";opacity:1}
+  .term-bar:hover .dot.yellow::before{content:"−";opacity:1}
+  .term-bar:hover .dot.green::before{content:"+";opacity:1}
+  .term-dialog.max .term-bar:hover .dot.green::before{content:"−"}
   .term-title{
     margin-left:8px;
     flex:1;
@@ -353,7 +355,8 @@
   .tui-foot b{color:#8FD9C8;font-weight:500}
 
   @media (max-width:520px){
-    .term{height:min(64svh,440px);font-size:16px}
+    .term-dialog{height:min(64svh,440px)}
+    .term{font-size:16px}
     .tui-cols,.tui-row{grid-template-columns:minmax(0,1fr) 84px}
     .tui-cols span:nth-child(3),.tui-row .d{display:none}
     .term-body{padding:12px}
@@ -496,6 +499,7 @@
   let tuiFiles = [];
   let tuiSel = 0;
   let tuiSeq = 0;
+  let tuiPrevMax = false;
 
   function fmtSize(n) {
     if (!n) return '0 B';
@@ -582,6 +586,7 @@
 
   function enterTui() {
     if (dlg.classList.contains('tui')) return;
+    tuiPrevMax = maximized;
     dlg.classList.add('tui');
     setMax(true, false);
     loadTui();
@@ -591,6 +596,7 @@
   function exitTui() {
     if (!dlg.classList.contains('tui')) return;
     dlg.classList.remove('tui');
+    setMax(tuiPrevMax, false);
     input.focus({ preventScroll: true });
     body.scrollTop = body.scrollHeight;
   }
