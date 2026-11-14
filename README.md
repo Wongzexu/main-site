@@ -6,7 +6,8 @@
 ```
 main-site/
 ├── public/                # 部署的静态站源文件
-│   ├── index.html         # 管理页（列表 / 二维码 / 删除）
+│   ├── index.html         # 主页（像素麦金塔入口）
+│   ├── download.html      # 下载管理页（列表 / 二维码 / 删除）
 │   └── assets/qrcode.min.js
 ├── deploy.sh              # 同步到 /srv/downloads
 └── .gitignore
@@ -34,6 +35,7 @@ main-site/
 nginx worker 用户是 `nginx`。改站点文件用 dever 即可；改 nginx 配置才需要 sudo。
 
 ## 相关
-- 管理页：https://sjdhqtl.cloud/
+- 主页：https://sjdhqtl.cloud/
+- 下载管理页：https://sjdhqtl.cloud/download.html
 - 文件列表：https://sjdhqtl.cloud/files/
 - 命令：`dl-put`（放入/列表/二维码/删除/清空）

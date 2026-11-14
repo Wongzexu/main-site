@@ -1,159 +1,150 @@
 <!doctype html>
 <html lang="zh-CN">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>下载中心</title>
+<meta name="theme-color" content="#FDF7EC">
+<title>sjdhqtl.cloud</title>
 <style>
-  body{font-family:system-ui,sans-serif;max-width:900px;margin:32px auto;padding:0 16px;color:#222}
-  h1{font-size:22px;margin:0 0 4px}
-  .sub{color:#666;font-size:13px;margin-bottom:16px}
-  .bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
-  input{padding:6px 8px;border:1px solid #ccc;border-radius:6px;font-size:14px}
-  button{padding:6px 10px;border:1px solid #ccc;background:#f7f7f7;border-radius:6px;cursor:pointer;font-size:13px}
-  button.del{color:#b00020;border-color:#e6b3b3;background:#fff5f5}
-  table{width:100%;border-collapse:collapse;font-size:14px}
-  th,td{padding:8px 6px;border-bottom:1px solid #eee;text-align:left;vertical-align:top}
-  th{color:#666;font-weight:500;font-size:12px}
-  td.n{word-break:break-all}
-  a{color:#0b61c9;text-decoration:none}
-  .muted{color:#999}
-  .actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
-  #qrbox{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;padding:16px;z-index:10}
-  #qrbox.on{display:flex}
-  .card{background:#fff;border-radius:10px;padding:16px;max-width:320px;width:100%;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.2)}
-  .card .name{font-size:13px;color:#333;word-break:break-all;margin-bottom:10px}
-  #qrimg{display:flex;justify-content:center}
-  #qrimg img,#qrimg canvas{max-width:100%;height:auto}
-  .card .url{font-size:11px;color:#888;word-break:break-all;margin-top:8px}
+  :root{
+    --bg:#FDF7EC;
+    --ink:#2E2A26;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    min-height:100svh;
+    display:grid;
+    place-items:center;
+    color:var(--ink);
+    background:
+      radial-gradient(1200px 760px at 50% -12%, #FFF9EC 0%, rgba(255,249,236,0) 62%),
+      radial-gradient(820px 620px at 86% 94%, rgba(214,240,228,.42) 0%, rgba(214,240,228,0) 66%),
+      radial-gradient(860px 640px at 10% 98%, rgba(255,222,196,.52) 0%, rgba(255,222,196,0) 64%),
+      var(--bg);
+    overflow-x:hidden;
+  }
+  /* 细点阵：科技感底纹，中心清晰、四周淡出 */
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    background-image:radial-gradient(rgba(126,106,82,.15) 1px, transparent 1.4px);
+    background-size:24px 24px;
+    -webkit-mask-image:radial-gradient(ellipse 72% 64% at 50% 44%, #000 12%, transparent 78%);
+    mask-image:radial-gradient(ellipse 72% 64% at 50% 44%, #000 12%, transparent 78%);
+  }
+  /* 顶部一道细光带 */
+  body::after{
+    content:"";
+    position:fixed;
+    top:0;
+    left:50%;
+    width:min(720px,90vw);
+    height:1px;
+    transform:translateX(-50%);
+    background:linear-gradient(90deg,transparent,rgba(34,183,154,.45),transparent);
+    pointer-events:none;
+  }
+  .stage{
+    display:grid;
+    place-items:center;
+    padding:24px;
+  }
+  .mac-link{
+    position:relative;
+    display:block;
+    width:min(52vmin,340px);
+    isolation:isolate;
+    -webkit-tap-highlight-color:transparent;
+    border-radius:16px;
+    animation:float 7s ease-in-out infinite;
+    filter:drop-shadow(0 26px 34px rgba(112,84,48,.17)) drop-shadow(0 5px 10px rgba(112,84,48,.07));
+  }
+  .mac-link:focus-visible{outline:none}
+  .mac-link:focus-visible .mac{
+    outline:3px solid rgba(34,183,154,.6);
+    outline-offset:12px;
+    border-radius:14px;
+  }
+  /* 图标背后的柔光：青绿 + 暖橙 */
+  .halo{
+    position:absolute;
+    left:50%;
+    top:52%;
+    width:190%;
+    aspect-ratio:1;
+    transform:translate(-50%,-50%);
+    border-radius:50%;
+    background:
+      radial-gradient(circle, rgba(88,226,199,.20) 0%, rgba(255,196,138,.15) 44%, rgba(255,255,255,0) 68%);
+    filter:blur(4px);
+    z-index:-1;
+  }
+  .mac{
+    display:block;
+    width:100%;
+    height:auto;
+    transition:transform .35s cubic-bezier(.2,.8,.2,1), filter .35s;
+    will-change:transform;
+  }
+  .mac-link:hover .mac{
+    transform:translateY(-5px) scale(1.02);
+    filter:drop-shadow(0 8px 10px rgba(112,84,48,.10));
+  }
+  .mac-link:active .mac{
+    transform:translateY(-1px) scale(.995);
+  }
+  @keyframes float{
+    0%,100%{transform:translateY(0)}
+    50%{transform:translateY(-8px)}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .mac-link{animation:none}
+    .mac{transition:none}
+  }
 </style>
-<h1>下载中心</h1>
-<div class="sub">文件目录 <code>/srv/downloads/files</code> · <a href="/files/">浏览文件列表</a> · 删除需要密码</div>
-
-<div class="bar">
-  <input id="pw" type="password" placeholder="删除密码" autocomplete="off">
-  <button id="save">保存密码</button>
-  <button id="refresh">刷新</button>
-</div>
-
-<table>
-  <thead><tr><th>文件名</th><th style="width:90px">大小</th><th style="width:160px">时间</th><th style="width:140px"></th></tr></thead>
-  <tbody id="rows"><tr><td colspan="4" class="muted">加载中…</td></tr></tbody>
-</table>
-
-<div id="qrbox" onclick="if(event.target===this)closeQR()">
-  <div class="card">
-    <div class="name" id="qrname"></div>
-    <div id="qrimg"></div>
-    <div class="url" id="qrurl"></div>
-    <div style="margin-top:12px"><button onclick="closeQR()">关闭</button></div>
-  </div>
-</div>
-
-<script src="/assets/qrcode.min.js"></script>
-<script>
-const USER = 'admin';
-const KEY = 'dl_pass';
-const rows = document.getElementById('rows');
-
-function fmt(n){
-  if(!n) return '0 B';
-  if(n < 1024) return n + ' B';
-  const u = ['KB','MB','GB','TB']; let i = -1;
-  do { n /= 1024; i++; } while (n >= 1024 && i < u.length - 1);
-  return n.toFixed(1) + ' ' + u[i];
-}
-
-async function load(){
-  rows.innerHTML = '<tr><td colspan="4" class="muted">加载中…</td></tr>';
-  try {
-    const r = await fetch('/api/list/', {headers:{'Accept':'application/json'}});
-    const arr = await r.json();
-    const files = arr.filter(x => x.type === 'file' && x.name !== 'index.html');
-    if (!files.length) {
-      rows.innerHTML = '<tr><td colspan="4" class="muted">（暂无文件）</td></tr>';
-      return;
-    }
-    rows.innerHTML = '';
-    for (const f of files) {
-      const tr = document.createElement('tr');
-
-      const td1 = document.createElement('td');
-      td1.className = 'n';
-      const a = document.createElement('a');
-      a.href = '/files/' + encodeURIComponent(f.name);
-      a.textContent = f.name;
-      td1.appendChild(a);
-
-      const td2 = document.createElement('td');
-      td2.className = 'muted';
-      td2.textContent = fmt(f.size);
-
-      const td3 = document.createElement('td');
-      td3.className = 'muted';
-      td3.textContent = (f.mtime || '').replace(' GMT','');
-
-      const td4 = document.createElement('td');
-      td4.className = 'actions';
-      const qbtn = document.createElement('button');
-      qbtn.textContent = '二维码';
-      qbtn.onclick = () => showQR(f.name);
-      const btn = document.createElement('button');
-      btn.className = 'del';
-      btn.textContent = '删除';
-      btn.onclick = () => del(f.name);
-      td4.append(qbtn, btn);
-
-      tr.append(td1, td2, td3, td4);
-      rows.appendChild(tr);
-    }
-  } catch (e) {
-    rows.innerHTML = '<tr><td colspan="4" class="muted">加载失败</td></tr>';
-  }
-}
-
-function showQR(name){
-  const url = location.origin + '/files/' + encodeURIComponent(name);
-  document.getElementById('qrname').textContent = name;
-  document.getElementById('qrurl').textContent = url;
-  const box = document.getElementById('qrimg');
-  box.innerHTML = '';
-  new QRCode(box, {text: url, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M});
-  document.getElementById('qrbox').classList.add('on');
-}
-
-function closeQR(){
-  document.getElementById('qrbox').classList.remove('on');
-}
-
-async function del(name){
-  let pw = sessionStorage.getItem(KEY);
-  if (!pw) {
-    pw = prompt('输入删除密码：');
-    if (!pw) return;
-    sessionStorage.setItem(KEY, pw);
-  }
-  if (!confirm('确定删除 ' + name + ' ?')) return;
-  const r = await fetch('/files/' + encodeURIComponent(name), {
-    method: 'DELETE',
-    headers: {Authorization: 'Basic ' + btoa(USER + ':' + pw)}
-  });
-  if (r.ok || r.status === 204) {
-    load();
-  } else if (r.status === 401) {
-    sessionStorage.removeItem(KEY);
-    alert('密码错误');
-  } else {
-    alert('删除失败：HTTP ' + r.status);
-  }
-}
-
-document.getElementById('save').onclick = () => {
-  const v = document.getElementById('pw').value.trim();
-  if (!v) { alert('请输入密码'); return; }
-  sessionStorage.setItem(KEY, v);
-  document.getElementById('pw').value = '';
-  alert('已保存（本标签页有效）');
-};
-document.getElementById('refresh').onclick = load;
-load();
-</script>
+</head>
+<body>
+<main class="stage">
+  <a class="mac-link" href="/download.html" aria-label="进入下载中心" title="进入下载中心">
+    <span class="halo" aria-hidden="true"></span>
+    <svg class="mac" viewBox="0 0 30 32" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="麦金塔电脑像素图" shape-rendering="crispEdges">
+  <defs>
+    <radialGradient id="macScr" cx="50%" cy="42%" r="68%">
+      <stop offset="0" stop-color="#8CF4DE" stop-opacity=".42"/>
+      <stop offset="45%" stop-color="#45CDB2" stop-opacity=".16"/>
+      <stop offset="100%" stop-color="#1E6B60" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="macGlass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".10"/>
+      <stop offset=".55" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  <rect x="5" y="2" width="20" height="1" fill="#7E6A52"/><rect x="4" y="3" width="1" height="1" fill="#7E6A52"/><rect x="5" y="3" width="19" height="1" fill="#FFFCF0"/><rect x="24" y="3" width="1" height="1" fill="#DCC5A2"/><rect x="25" y="3" width="1" height="1" fill="#7E6A52"/><rect x="4" y="4" width="1" height="1" fill="#7E6A52"/><rect x="5" y="4" width="1" height="1" fill="#FFFCF0"/><rect x="6" y="4" width="18" height="1" fill="#F1E2C6"/><rect x="24" y="4" width="1" height="1" fill="#DCC5A2"/><rect x="25" y="4" width="1" height="1" fill="#7E6A52"/><rect x="4" y="5" width="1" height="1" fill="#7E6A52"/><rect x="5" y="5" width="1" height="1" fill="#FFFCF0"/><rect x="6" y="5" width="14" height="1" fill="#6E6155"/><rect x="20" y="5" width="4" height="1" fill="#F1E2C6"/><rect x="24" y="5" width="1" height="1" fill="#DCC5A2"/><rect x="25" y="5" width="1" height="1" fill="#7E6A52"/><rect x="4" y="6" width="1" height="1" fill="#7E6A52"/><rect x="5" y="6" width="1" height="1" fill="#FFFCF0"/><rect x="6" y="6" width="1" height="1" fill="#5C5147"/><rect x="7" y="6" width="12" height="1" fill="#22262B"/><rect x="19" y="6" width="1" height="1" fill="#5C5147"/><rect x="20" y="6" width="4" height="1" fill="#F1E2C6"/><rect x="24" y="6" width="1" height="1" fill="#DCC5A2"/><rect x="25" y="6" width="1" height="1" fill="#7E6A52"/><rect x="4" y="7" width="1" height="1" fill="#7E6A52"/><rect x="5" y="7" width="1" height="1" fill="#FFFCF0"/><rect x="6" y="7" width="1" height="1" fill="#5C5147"/><rect x="7" y="7" width="12" height="1" fill="#22262B"/><rect x="19" y="7" width="1" height="1" fill="#5C5147"/><rect x="20" y="7" width="4" height="1" fill="#F1E2C6"/><rect x="24" y="7" width="1" height="1" fill="#DCC5A2"/><rect x="25" y="7" width="1" height="1" fill="#7E6A52"/><rect x="4" y="8" width="1" height="1" fill="#7E6A52"/><rect x="5" y="8" width="1" height="1" fill="#FFFCF0"/><rect x="6" y="8" width="1" height="1" fill="#5C5147"/><rect x="7" y="8" width="12" height="1" fill="#22262B"/><rect x="19" y="8" width="1" height="1" fill="#5C5147"/><rect x="20" y="8" width="1" height="1" fill="#F1E2C6"/><rect x="21" y="8" width="3" height="1" fill="#453B33"/><rect x="24" y="8" width="1" height="1" fill="#DCC5A2"/><rect x="25" y="8" width="1" height="1" fill="#7E6A52"/><rect x="4" y="9" width="1" height="1" fill="#7E6A52"/><rect x="5" y="9" width="1" height="1" fill="#FFFCF0"/><rect x="6" y="9" width="1" height="1" fill="#5C5147"/><rect x="7" y="9" width="12" height="1" fill="#22262B"/><rect x="19" y="9" width="1" height="1" fill="#5C5147"/><rect x="20" y="9" width="1" height="1" fill="#F1E2C6"/><rect x="21" y="9" width="4" height="1" fill="#DCC5A2"/><rect x="25" y="9" width="1" height="1" fill="#7E6A52"/><rect x="4" y="10" width="1" height="1" fill="#7E6A52"/><rect x="5" y="10" width="1" height="1" fill="#FFFCF0"/><rect x="6" y="10" width="1" height="1" fill="#5C5147"/><rect x="7" y="10" width="12" height="1" fill="#22262B"/><rect x="19" y="10" width="1" height="1" fill="#5C5147"/><rect x="20" y="10" width="4" height="1" fill="#F1E2C6"/><rect x="24" y="10" width="1" height="1" fill="#DCC5A2"/><rect x="25" y="10" width="1" height="1" fill="#7E6A52"/><rect x="4" y="11" width="1" height="1" fill="#7E6A52"/><rect x="5" y="11" width="1" height="1" fill="#FFFCF0"/><rect x="6" y="11" width="1" height="1" fill="#5C5147"/><rect x="7" y="11" width="12" height="1" fill="#22262B"/><rect x="19" y="11" width="1" height="1" fill="#5C5147"/><rect x="20" y="11" width="4" height="1" fill="#F1E2C6"/><rect x="24" y="11" width="1" height="1" fill="#DCC5A2"/><rect x="25" y="11" width="1" height="1" fill="#7E6A52"/><rect x="4" y="12" width="1" height="1" fill="#7E6A52"/><rect x="5" y="12" width="1" height="1" fill="#FFFCF0"/><rect x="6" y="12" width="1" height="1" fill="#5C5147"/><rect x="7" y="12" width="12" height="1" fill="#22262B"/><rect x="19" y="12" width="1" height="1" fill="#5C5147"/><rect x="20" y="12" width="4" height="1" fill="#F1E2C6"/><rect x="24" y="12" width="1" height="1" fill="#DCC5A2"/><rect x="25" y="12" width="1" height="1" fill="#7E6A52"/><rect x="4" y="13" width="1" height="1" fill="#7E6A52"/><rect x="5" y="13" width="1" height="1" fill="#FFFCF0"/><rect x="6" y="13" width="1" height="1" fill="#5C5147"/><rect x="7" y="13" width="12" height="1" fill="#22262B"/><rect x="19" y="13" width="1" height="1" fill="#5C5147"/><rect x="20" y="13" width="4" height="1" fill="#F1E2C6"/><rect x="24" y="13" width="1" height="1" fill="#DCC5A2"/><rect x="25" y="13" width="1" height="1" fill="#7E6A52"/><rect x="4" y="14" width="1" height="1" fill="#7E6A52"/><rect x="5" y="14" width="1" height="1" fill="#FFFCF0"/><rect x="6" y="14" width="1" height="1" fill="#5C5147"/><rect x="7" y="14" width="12" height="1" fill="#22262B"/><rect x="19" y="14" width="1" height="1" fill="#5C5147"/><rect x="20" y="14" width="4" height="1" fill="#F1E2C6"/><rect x="24" y="14" width="1" height="1" fill="#DCC5A2"/><rect x="25" y="14" width="1" height="1" fill="#7E6A52"/><rect x="4" y="15" width="1" height="1" fill="#7E6A52"/><rect x="5" y="15" width="1" height="1" fill="#FFFCF0"/><rect x="6" y="15" width="1" height="1" fill="#5C5147"/><rect x="7" y="15" width="12" height="1" fill="#22262B"/><rect x="19" y="15" width="1" height="1" fill="#5C5147"/><rect x="20" y="15" width="4" height="1" fill="#F1E2C6"/><rect x="24" y="15" width="1" height="1" fill="#DCC5A2"/><rect x="25" y="15" width="1" height="1" fill="#7E6A52"/><rect x="4" y="16" width="1" height="1" fill="#7E6A52"/><rect x="5" y="16" width="1" height="1" fill="#FFFCF0"/><rect x="6" y="16" width="1" height="1" fill="#5C5147"/><rect x="7" y="16" width="12" height="1" fill="#22262B"/><rect x="19" y="16" width="1" height="1" fill="#5C5147"/><rect x="20" y="16" width="4" height="1" fill="#F1E2C6"/><rect x="24" y="16" width="1" height="1" fill="#DCC5A2"/><rect x="25" y="16" width="1" height="1" fill="#7E6A52"/><rect x="4" y="17" width="1" height="1" fill="#7E6A52"/><rect x="5" y="17" width="1" height="1" fill="#FFFCF0"/><rect x="6" y="17" width="1" height="1" fill="#5C5147"/><rect x="7" y="17" width="12" height="1" fill="#22262B"/><rect x="19" y="17" width="1" height="1" fill="#5C5147"/><rect x="20" y="17" width="4" height="1" fill="#F1E2C6"/><rect x="24" y="17" width="1" height="1" fill="#DCC5A2"/><rect x="25" y="17" width="1" height="1" fill="#7E6A52"/><rect x="4" y="18" width="1" height="1" fill="#7E6A52"/><rect x="5" y="18" width="1" height="1" fill="#FFFCF0"/><rect x="6" y="18" width="1" height="1" fill="#5C5147"/><rect x="7" y="18" width="12" height="1" fill="#22262B"/><rect x="19" y="18" width="1" height="1" fill="#5C5147"/><rect x="20" y="18" width="4" height="1" fill="#F1E2C6"/><rect x="24" y="18" width="1" height="1" fill="#DCC5A2"/><rect x="25" y="18" width="1" height="1" fill="#7E6A52"/><rect x="4" y="19" width="1" height="1" fill="#7E6A52"/><rect x="5" y="19" width="1" height="1" fill="#FFFCF0"/><rect x="6" y="19" width="1" height="1" fill="#5C5147"/><rect x="7" y="19" width="12" height="1" fill="#22262B"/><rect x="19" y="19" width="1" height="1" fill="#5C5147"/><rect x="20" y="19" width="4" height="1" fill="#F1E2C6"/><rect x="24" y="19" width="1" height="1" fill="#DCC5A2"/><rect x="25" y="19" width="1" height="1" fill="#7E6A52"/><rect x="4" y="20" width="1" height="1" fill="#7E6A52"/><rect x="5" y="20" width="1" height="1" fill="#FFFCF0"/><rect x="6" y="20" width="14" height="1" fill="#5C5147"/><rect x="20" y="20" width="4" height="1" fill="#F1E2C6"/><rect x="24" y="20" width="1" height="1" fill="#DCC5A2"/><rect x="25" y="20" width="1" height="1" fill="#7E6A52"/><rect x="4" y="21" width="1" height="1" fill="#7E6A52"/><rect x="5" y="21" width="1" height="1" fill="#FFFCF0"/><rect x="6" y="21" width="18" height="1" fill="#C5A87F"/><rect x="24" y="21" width="1" height="1" fill="#DCC5A2"/><rect x="25" y="21" width="1" height="1" fill="#7E6A52"/><rect x="4" y="22" width="1" height="1" fill="#7E6A52"/><rect x="5" y="22" width="1" height="1" fill="#FFFCF0"/><rect x="6" y="22" width="18" height="1" fill="#F1E2C6"/><rect x="24" y="22" width="1" height="1" fill="#DCC5A2"/><rect x="25" y="22" width="1" height="1" fill="#7E6A52"/><rect x="4" y="23" width="1" height="1" fill="#7E6A52"/><rect x="5" y="23" width="1" height="1" fill="#FFFCF0"/><rect x="6" y="23" width="18" height="1" fill="#F1E2C6"/><rect x="24" y="23" width="1" height="1" fill="#DCC5A2"/><rect x="25" y="23" width="1" height="1" fill="#7E6A52"/><rect x="4" y="24" width="1" height="1" fill="#7E6A52"/><rect x="5" y="24" width="1" height="1" fill="#FFFCF0"/><rect x="6" y="24" width="18" height="1" fill="#F1E2C6"/><rect x="24" y="24" width="1" height="1" fill="#DCC5A2"/><rect x="25" y="24" width="1" height="1" fill="#7E6A52"/><rect x="4" y="25" width="1" height="1" fill="#7E6A52"/><rect x="5" y="25" width="20" height="1" fill="#DCC5A2"/><rect x="25" y="25" width="1" height="1" fill="#7E6A52"/><rect x="5" y="26" width="20" height="1" fill="#7E6A52"/><rect x="9" y="27" width="12" height="1" fill="#C5A87F"/><rect x="9" y="28" width="12" height="1" fill="#DCC5A2"/><rect x="9" y="29" width="1" height="1" fill="#DCC5A2"/><rect x="10" y="29" width="10" height="1" fill="#7E6A52"/><rect x="20" y="29" width="1" height="1" fill="#DCC5A2"/>
+  <g>
+    <rect x="7" y="6" width="12" height="14" fill="url(#macScr)"/>
+    <rect x="7" y="6" width="12" height="14" fill="url(#macGlass)"/>
+    <g fill="#000" opacity=".16">
+      <rect x="7" y="7" width="12" height="1"/>
+      <rect x="7" y="9" width="12" height="1"/>
+      <rect x="7" y="11" width="12" height="1"/>
+      <rect x="7" y="13" width="12" height="1"/>
+      <rect x="7" y="15" width="12" height="1"/>
+      <rect x="7" y="17" width="12" height="1"/>
+    </g>
+    <rect x="7" y="18" width="12" height="2" fill="#0B1F1D" opacity=".28"/>
+    <g fill="#5C5147">
+      <rect x="7" y="6" width="1" height="1"/>
+      <rect x="18" y="6" width="1" height="1"/>
+      <rect x="7" y="19" width="1" height="1"/>
+      <rect x="18" y="19" width="1" height="1"/>
+    </g>
+  </g>
+</svg>
+  </a>
+</main>
+</body>
+</html>
