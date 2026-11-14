@@ -147,7 +147,15 @@
     background:transparent;
     color:#CDEFE4;
     overflow:visible;
+    transition:width .28s cubic-bezier(.2,.8,.2,1),height .28s cubic-bezier(.2,.8,.2,1);
   }
+  /* 最大化：铺满视口，上限 1920×1080 */
+  .term-dialog.max{
+    width:min(1920px,100vw);
+    height:min(1080px,100vh);
+    max-height:none;
+  }
+  .term-dialog.max .term{height:100%;border-radius:0}
   .term-dialog::backdrop{
     background:rgba(38,28,16,.26);
     -webkit-backdrop-filter:blur(3px) saturate(.9);
@@ -180,6 +188,7 @@
     line-height:1.65;
     overflow:hidden;
     color-scheme:dark;
+    transition:height .28s cubic-bezier(.2,.8,.2,1),border-radius .28s;
   }
   /* CRT 扫描线 */
   .term::after{
@@ -280,6 +289,7 @@
     .term-title{font-size:11px}
   }
   @media (prefers-reduced-motion:reduce){
+    .term-dialog,.term{transition:none}
     .term-dialog[open],.term-dialog.closing{animation:none}
     .mac-link:hover .crt-sweep,
     .mac-link:hover .crt-pulse{animation:none;opacity:0}
@@ -341,7 +351,7 @@
     <div class="term-bar">
       <button type="button" class="dot red" id="termClose" aria-label="关闭终端" title="关闭"></button>
       <span class="dot yellow" aria-hidden="true"></span>
-      <span class="dot green" aria-hidden="true"></span>
+      <button type="button" class="dot green" id="termMax" aria-label="最大化" title="最大化"></button>
       <span class="term-title" id="termTitle">sjdhqtl — terminal</span>
     </div>
     <div class="term-body" id="termBody">
@@ -417,6 +427,20 @@
     setTimeout(() => { location.href = url; }, 520);
   }
 
+  const maxBtn = document.getElementById('termMax');
+  let maximized = false;
+  function setMax(on, focus = true) {
+    maximized = on;
+    dlg.classList.toggle('max', on);
+    const label = on ? '还原' : '最大化';
+    maxBtn.setAttribute('aria-label', label);
+    maxBtn.title = label;
+    if (focus) {
+      input.focus({ preventScroll: true });
+      body.scrollTop = body.scrollHeight;
+    }
+  }
+
   function closeTerm() {
     if (navigating || !dlg.open) return;
     document.documentElement.classList.remove('term-open');
@@ -461,6 +485,7 @@
     if (dlg.open || opening) return;
     opening = true;
     navigating = false;
+    setMax(false, false);
     log.replaceChildren();
     input.value = '';
     input.disabled = false;
@@ -529,6 +554,11 @@
     }
   });
   closeBtn.addEventListener('click', closeTerm);
+  maxBtn.addEventListener('click', () => setMax(!maximized));
+  dlg.querySelector('.term-bar').addEventListener('dblclick', (e) => {
+    if (e.target.closest('button')) return;
+    setMax(!maximized);
+  });
   // 点外部区域不关闭，只把焦点送回提示符；退出只有「红点」或 exit / cd /
   dlg.addEventListener('click', (e) => {
     if (e.target === dlg || (body.contains(e.target) && !closeBtn.contains(e.target))) {
