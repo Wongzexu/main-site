@@ -283,8 +283,79 @@
     caret-color:#5FE3C9;
   }
   .term-line input:disabled{opacity:.45}
+
+  /* ===== /dl TUI ===== */
+  .term-tui{display:none;flex:1;min-height:0;flex-direction:column}
+  .term-dialog.tui .term-log,
+  .term-dialog.tui .term-line{display:none}
+  .term-dialog.tui .term-tui{display:flex}
+  .term-dialog.tui .term-body{display:flex;flex-direction:column;overflow:hidden}
+  .tui-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    gap:12px;
+    flex:none;
+    padding:0 4px 8px;
+    border-bottom:1px solid rgba(95,227,201,.18);
+    color:#7FB4A6;
+    font-size:12px;
+    letter-spacing:.04em;
+  }
+  .tui-head b{color:#5FE3C9;font-weight:600}
+  .tui-cols{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 96px 150px;
+    gap:18px;
+    flex:none;
+    padding:7px 12px 5px;
+    color:#54786E;
+    font-size:11px;
+    letter-spacing:.1em;
+    text-transform:uppercase;
+  }
+  .tui-list{
+    flex:1;
+    min-height:0;
+    overflow:auto;
+    padding:2px 0 6px;
+    outline:none;
+    scrollbar-width:thin;
+    scrollbar-color:rgba(95,227,201,.35) transparent;
+  }
+  .tui-list:focus-visible{outline:none}
+  .tui-row{
+    display:grid;
+    grid-template-columns:minmax(0,1fr) 96px 150px;
+    gap:18px;
+    align-items:baseline;
+    padding:3px 12px;
+    border-radius:2px;
+    color:#CDEFE4;
+    cursor:pointer;
+  }
+  .tui-row .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tui-row .s,.tui-row .d{color:#6E9E90;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .tui-row:hover{background:rgba(95,227,201,.07)}
+  .tui-row.sel{background:#5FE3C9;color:#06120F}
+  .tui-row.sel .s,.tui-row.sel .d{color:#0A2A23}
+  .tui-empty{padding:10px 12px;color:#6E9E90}
+  .tui-foot{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px 18px;
+    flex:none;
+    padding-top:8px;
+    border-top:1px solid rgba(95,227,201,.18);
+    color:#54786E;
+    font-size:12px;
+  }
+  .tui-foot b{color:#8FD9C8;font-weight:500}
+
   @media (max-width:520px){
     .term{height:min(64svh,440px);font-size:16px}
+    .tui-cols,.tui-row{grid-template-columns:minmax(0,1fr) 84px}
+    .tui-cols span:nth-child(3),.tui-row .d{display:none}
     .term-body{padding:12px}
     .term-title{font-size:11px}
   }
@@ -362,6 +433,20 @@
                autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
                aria-label="终端命令输入">
       </form>
+      <div class="term-tui" id="termTui">
+        <div class="tui-head">
+          <span>SJDHQTL <b>/dl</b></span>
+          <span id="tuiMeta">loading…</span>
+        </div>
+        <div class="tui-cols" aria-hidden="true"><span>name</span><span>size</span><span>modified</span></div>
+        <div class="tui-list" id="tuiList" tabindex="0" role="listbox" aria-label="下载文件列表"></div>
+        <div class="tui-foot">
+          <span><b>↑↓</b> select</span>
+          <span><b>⏎</b> download</span>
+          <span><b>r</b> refresh</span>
+          <span><b>q</b> back</span>
+        </div>
+      </div>
     </div>
   </div>
 </dialog>
@@ -374,6 +459,9 @@
   const form = document.getElementById('termForm');
   const input = document.getElementById('termInput');
   const closeBtn = document.getElementById('termClose');
+  const tui = document.getElementById('termTui');
+  const tuiList = document.getElementById('tuiList');
+  const tuiMeta = document.getElementById('tuiMeta');
   const link = document.querySelector('.mac-link');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
   const PROMPT = 'admin@sjdhqtl:~$';
@@ -402,6 +490,137 @@
     }
     append(d);
   }
+
+  // ---------- /dl TUI ----------
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let tuiFiles = [];
+  let tuiSel = 0;
+  let tuiSeq = 0;
+
+  function fmtSize(n) {
+    if (!n) return '0 B';
+    if (n < 1024) return n + ' B';
+    const u = ['KB', 'MB', 'GB', 'TB'];
+    let i = -1;
+    do { n /= 1024; i++; } while (n >= 1024 && i < u.length - 1);
+    return n.toFixed(1) + ' ' + u[i];
+  }
+  function fmtDate(value) {
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
+    const p = (v) => String(v).padStart(2, '0');
+    return `${MONTHS[d.getMonth()]} ${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+  }
+
+  function selectRow(i, scroll) {
+    if (!tuiFiles.length) return;
+    tuiSel = Math.max(0, Math.min(tuiFiles.length - 1, i));
+    const rows = tuiList.querySelectorAll('.tui-row');
+    rows.forEach((r, j) => {
+      const on = j === tuiSel;
+      r.classList.toggle('sel', on);
+      r.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    tuiList.setAttribute('aria-activedescendant', 'tui-row-' + tuiSel);
+    if (scroll && rows[tuiSel]) rows[tuiSel].scrollIntoView({ block: 'nearest' });
+  }
+
+  function downloadRow() {
+    const f = tuiFiles[tuiSel];
+    if (!f) return;
+    location.href = '/files/' + encodeURIComponent(f.name);
+  }
+
+  function renderTui() {
+    tuiList.replaceChildren();
+    if (!tuiFiles.length) {
+      const e = document.createElement('div');
+      e.className = 'tui-empty';
+      e.textContent = 'no files in /dl';
+      tuiList.append(e);
+      tuiMeta.textContent = '0 files';
+      return;
+    }
+    const total = tuiFiles.reduce((a, f) => a + (f.size || 0), 0);
+    tuiMeta.textContent = tuiFiles.length + ' file' + (tuiFiles.length > 1 ? 's' : '') + ' · ' + fmtSize(total);
+    tuiFiles.forEach((f, i) => {
+      const row = document.createElement('div');
+      row.className = 'tui-row';
+      row.id = 'tui-row-' + i;
+      row.dataset.i = i;
+      row.setAttribute('role', 'option');
+      const n = document.createElement('span'); n.className = 'n'; n.textContent = f.name;
+      const z = document.createElement('span'); z.className = 's'; z.textContent = fmtSize(f.size);
+      const d = document.createElement('span'); d.className = 'd'; d.textContent = fmtDate(f.mtime);
+      row.append(n, z, d);
+      tuiList.append(row);
+    });
+    selectRow(tuiSel, true);
+  }
+
+  async function loadTui() {
+    const seq = ++tuiSeq;
+    tuiMeta.textContent = 'loading…';
+    tuiList.replaceChildren();
+    const e = document.createElement('div');
+    e.className = 'tui-empty';
+    e.textContent = 'loading…';
+    tuiList.append(e);
+    try {
+      const r = await fetch('/api/list/', { headers: { Accept: 'application/json' } });
+      const arr = await r.json();
+      if (seq !== tuiSeq) return;
+      tuiFiles = arr.filter((x) => x.type === 'file' && x.name !== 'index.html');
+      tuiSel = 0;
+      renderTui();
+    } catch {
+      if (seq !== tuiSeq) return;
+      tuiMeta.textContent = 'failed to load';
+      e.textContent = 'failed to load /dl';
+    }
+  }
+
+  function enterTui() {
+    if (dlg.classList.contains('tui')) return;
+    dlg.classList.add('tui');
+    setMax(true, false);
+    loadTui();
+    tuiList.focus({ preventScroll: true });
+  }
+
+  function exitTui() {
+    if (!dlg.classList.contains('tui')) return;
+    dlg.classList.remove('tui');
+    input.focus({ preventScroll: true });
+    body.scrollTop = body.scrollHeight;
+  }
+
+  dlg.addEventListener('keydown', (e) => {
+    if (!dlg.classList.contains('tui')) return;
+    const onButton = !!e.target.closest('button');
+    const k = e.key;
+    if (k === 'ArrowDown' || k === 'j') { e.preventDefault(); selectRow(tuiSel + 1, true); }
+    else if (k === 'ArrowUp' || k === 'k') { e.preventDefault(); selectRow(tuiSel - 1, true); }
+    else if (k === 'Home') { e.preventDefault(); selectRow(0, true); }
+    else if (k === 'End') { e.preventDefault(); selectRow(tuiFiles.length - 1, true); }
+    else if (k === 'PageDown') { e.preventDefault(); selectRow(tuiSel + 10, true); }
+    else if (k === 'PageUp') { e.preventDefault(); selectRow(tuiSel - 10, true); }
+    else if (k === 'Enter') {
+      if (onButton) return;
+      e.preventDefault();
+      downloadRow();
+    }
+    else if (k === 'r' || k === 'R') { e.preventDefault(); loadTui(); }
+    else if (k === 'q' || k === 'Q') { e.preventDefault(); exitTui(); }
+  });
+  tuiList.addEventListener('click', (e) => {
+    const row = e.target.closest('.tui-row');
+    if (!row) return;
+    const i = Number(row.dataset.i);
+    if (i === tuiSel) { downloadRow(); return; }
+    selectRow(i, false);
+    tuiList.focus({ preventScroll: true });
+  });
 
   function help() {
     line('available commands:');
@@ -473,7 +692,7 @@
       p = p.replace(/\/+$/, '');
       if (!p) p = '/';
       if (p[0] !== '/') p = '/' + p;
-      if (p === '/dl') return go('/download.html', '/dl');
+      if (p === '/dl') return enterTui();
       if (p === '/files') return go('/files/', '/files/');
       return line('cd: no such file or directory: ' + raw2, 'err');
     }
@@ -486,6 +705,9 @@
     opening = true;
     navigating = false;
     setMax(false, false);
+    dlg.classList.remove('tui');
+    tuiSeq++;
+    tuiFiles = [];
     log.replaceChildren();
     input.value = '';
     input.disabled = false;
@@ -541,14 +763,17 @@
   // 模态框里只有「红点 + 输入框」两个可聚焦元素，显式循环，避免 Tab 落空
   dlg.addEventListener('keydown', (e) => {
     if (e.key !== 'Tab' || !dlg.open) return;
-    const first = closeBtn;
-    const last = input;
+    const els = [closeBtn, maxBtn, tuiList, input].filter((el) => el.offsetParent !== null && !el.disabled);
+    if (!els.length) return;
+    const first = els[0];
+    const last = els[els.length - 1];
+    const active = document.activeElement;
     if (e.shiftKey) {
-      if (document.activeElement === first || !dlg.contains(document.activeElement)) {
+      if (active === first || !dlg.contains(active)) {
         e.preventDefault();
         last.focus({ preventScroll: true });
       }
-    } else if (document.activeElement === last || !dlg.contains(document.activeElement)) {
+    } else if (active === last || !dlg.contains(active)) {
       e.preventDefault();
       first.focus({ preventScroll: true });
     }
