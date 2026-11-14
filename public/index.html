@@ -253,6 +253,7 @@
     text-overflow:ellipsis;
   }
   .term-body{
+    position:relative;
     flex:1;
     min-height:0;
     overflow:auto;
@@ -307,8 +308,8 @@
   .tui-head b{color:#5FE3C9;font-weight:600}
   .tui-cols{
     display:grid;
-    grid-template-columns:minmax(0,1fr) 96px 150px;
-    gap:18px;
+    grid-template-columns:18px minmax(0,1fr) 96px 150px;
+    gap:14px;
     flex:none;
     padding:7px 12px 5px;
     color:#54786E;
@@ -328,8 +329,8 @@
   .tui-list:focus-visible{outline:none}
   .tui-row{
     display:grid;
-    grid-template-columns:minmax(0,1fr) 96px 150px;
-    gap:18px;
+    grid-template-columns:18px minmax(0,1fr) 96px 150px;
+    gap:14px;
     align-items:baseline;
     padding:3px 12px;
     border-radius:2px;
@@ -337,6 +338,12 @@
     cursor:pointer;
   }
   .tui-row .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tui-row .mk{color:transparent;font-size:11px;line-height:1}
+  .tui-row.marked{background:rgba(95,227,201,.10)}
+  .tui-row.marked .mk{color:#5FE3C9}
+  .tui-row.marked .n{color:#D8FFF4}
+  .tui-row.sel.marked{background:#5FE3C9}
+  .tui-row.sel.marked .mk{color:#0A2A23}
   .tui-row.dir .n{color:#8FE9D6}
   .tui-row.dir.sel .n{color:#0A2A23}
   .tui-row.up .n{color:#7FB4A6}
@@ -356,11 +363,51 @@
     font-size:12px;
   }
   .tui-foot b{color:#8FD9C8;font-weight:500}
+  /* 终端风格确认弹窗 */
+  .tui-confirm{
+    position:absolute;
+    inset:0;
+    z-index:4;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+    background:rgba(2,8,6,.62);
+    -webkit-backdrop-filter:blur(2px);
+    backdrop-filter:blur(2px);
+  }
+  .tui-confirm.on{display:flex}
+  .tui-confirm-box{
+    width:min(360px,100%);
+    padding:16px 18px;
+    border:1px solid rgba(95,227,201,.45);
+    border-radius:6px;
+    background:#081512;
+    box-shadow:0 18px 50px rgba(0,0,0,.5),0 0 40px rgba(50,200,170,.12);
+  }
+  .tui-confirm-title{font-size:11px;letter-spacing:.16em;color:#5FE3C9;margin-bottom:10px}
+  .tui-confirm-text{color:#DDFBF2;font-size:13.5px;line-height:1.6;margin-bottom:14px;word-break:break-word}
+  .tui-confirm-text .f{color:#8FD9C8}
+  .tui-confirm-actions{display:flex;gap:8px}
+  .tui-btn{
+    flex:1;
+    padding:7px 10px;
+    border:1px solid rgba(95,227,201,.3);
+    border-radius:4px;
+    background:rgba(95,227,201,.06);
+    color:#CDEFE4;
+    font:inherit;
+    font-size:12.5px;
+    cursor:pointer;
+  }
+  .tui-btn:hover,.tui-btn:focus-visible{background:rgba(95,227,201,.16);outline:1px solid rgba(95,227,201,.55);outline-offset:1px}
+  .tui-btn.primary{border-color:#5FE3C9;background:rgba(95,227,201,.18);color:#E6FFF8}
+  .tui-btn b{color:#5FE3C9}
 
   @media (max-width:520px){
     .term-dialog{height:min(64svh,440px)}
     .term{font-size:16px}
-    .tui-cols,.tui-row{grid-template-columns:minmax(0,1fr) 84px}
+    .tui-cols,.tui-row{grid-template-columns:18px minmax(0,1fr) 84px}
     .tui-cols span:nth-child(3),.tui-row .d{display:none}
     .term-body{padding:12px}
     .term-title{font-size:11px}
@@ -439,17 +486,28 @@
                autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
                aria-label="终端命令输入">
       </form>
+      <div class="tui-confirm" id="tuiConfirm">
+        <div class="tui-confirm-box" role="alertdialog" aria-modal="true" aria-labelledby="tuiConfirmText">
+          <div class="tui-confirm-title">CONFIRM</div>
+          <div class="tui-confirm-text" id="tuiConfirmText"></div>
+          <div class="tui-confirm-actions">
+            <button type="button" class="tui-btn primary" id="tuiConfirmYes"><b>y</b> download</button>
+            <button type="button" class="tui-btn" id="tuiConfirmNo"><b>n</b> cancel</button>
+          </div>
+        </div>
+      </div>
       <div class="term-tui" id="termTui">
         <div class="tui-head">
           <span>SJDHQTL <b id="tuiPath">/dl</b></span>
           <span id="tuiMeta">loading…</span>
         </div>
-        <div class="tui-cols" aria-hidden="true"><span>name</span><span>size</span><span>modified</span></div>
-        <div class="tui-list" id="tuiList" tabindex="0" role="listbox" aria-label="下载文件列表"></div>
+        <div class="tui-cols" aria-hidden="true"><span></span><span>name</span><span>size</span><span>modified</span></div>
+        <div class="tui-list" id="tuiList" tabindex="0" role="listbox" aria-multiselectable="true" aria-label="下载文件列表"></div>
         <div class="tui-foot">
           <span><b>↑↓</b> select</span>
           <span><b>⏎</b> open</span>
           <span><b>⌫</b> up</span>
+          <span><b>Space</b> / <b>Ctrl+click</b> mark</span>
           <span><b>Ctrl+R</b> refresh</span>
           <span><b>Ctrl+Q</b> back</span>
         </div>
@@ -467,6 +525,10 @@
   const input = document.getElementById('termInput');
   const closeBtn = document.getElementById('termClose');
   const tui = document.getElementById('termTui');
+  const confirmEl = document.getElementById('tuiConfirm');
+  const confirmText = document.getElementById('tuiConfirmText');
+  const confirmYes = document.getElementById('tuiConfirmYes');
+  const confirmNo = document.getElementById('tuiConfirmNo');
   const tuiList = document.getElementById('tuiList');
   const tuiMeta = document.getElementById('tuiMeta');
   const link = document.querySelector('.mac-link');
@@ -504,8 +566,11 @@
   let tuiSel = 0;
   let tuiSeq = 0;
   let tuiPath = [];
+  const tuiMarks = new Set();
   const tuiPathEl = document.getElementById('tuiPath');
   const tuiWhere = () => '/dl' + (tuiPath.length ? '/' + tuiPath.join('/') : '');
+  const markPath = (f) => [...tuiPath, f.name].join('/');
+  const hrefOf = (rel) => '/files/' + rel.split('/').map(encodeURIComponent).join('/');
 
   function fmtSize(n) {
     if (!n) return '0 B';
@@ -542,6 +607,50 @@
     location.href = '/files/' + rel;
   }
 
+  function toggleMark(i) {
+    const f = tuiFiles[i];
+    if (!f || f.type !== 'file') return;
+    const p = markPath(f);
+    if (tuiMarks.has(p)) tuiMarks.delete(p); else tuiMarks.add(p);
+    const row = tuiList.querySelector('.tui-row[data-i="' + i + '"]');
+    if (row) {
+      row.classList.toggle('marked', tuiMarks.has(p));
+      const mk = row.querySelector('.mk');
+      if (mk) mk.textContent = tuiMarks.has(p) ? '✓' : '';
+    }
+    updateTuiMeta();
+  }
+
+  function askDownload() {
+    const n = tuiMarks.size;
+    if (!n) return;
+    confirmText.textContent = 'download ' + n + ' marked file' + (n > 1 ? 's' : '') + '?';
+    confirmEl.classList.add('on');
+    confirmYes.focus({ preventScroll: true });
+  }
+
+  function closeConfirm(refocus = true) {
+    confirmEl.classList.remove('on');
+    if (refocus) tuiList.focus({ preventScroll: true });
+  }
+
+  function downloadMarked() {
+    const paths = [...tuiMarks];
+    if (!paths.length) return;
+    tuiMeta.textContent = 'downloading ' + paths.length + ' file' + (paths.length > 1 ? 's' : '') + '…';
+    paths.forEach((rel, i) => {
+      setTimeout(() => {
+        // 用隐藏 iframe 触发下载：比 <a download> 在无头/受限环境更可靠
+        const f = document.createElement('iframe');
+        f.style.display = 'none';
+        f.src = hrefOf(rel);
+        document.body.append(f);
+        setTimeout(() => f.remove(), 30000);
+      }, i * 600);
+    });
+    setTimeout(updateTuiMeta, paths.length * 600 + 1500);
+  }
+
   function openSelected() {
     const f = tuiFiles[tuiSel];
     if (!f) return;
@@ -558,6 +667,18 @@
     downloadRow();
   }
 
+  function updateTuiMeta() {
+    if (!tuiFiles.length) { tuiMeta.textContent = '0 items'; return; }
+    const dirs = tuiFiles.filter((f) => f.type === 'directory').length;
+    const filesN = tuiFiles.filter((f) => f.type === 'file').length;
+    const total = tuiFiles.reduce((a, f) => a + (f.type === 'file' ? (f.size || 0) : 0), 0);
+    const parts = [];
+    if (dirs) parts.push(dirs + ' dir' + (dirs > 1 ? 's' : ''));
+    parts.push(filesN + ' file' + (filesN > 1 ? 's' : ''));
+    if (tuiMarks.size) parts.push(tuiMarks.size + ' marked');
+    tuiMeta.textContent = parts.join(' · ') + ' · ' + fmtSize(total);
+  }
+
   function renderTui() {
     tuiList.replaceChildren();
     if (!tuiFiles.length) {
@@ -568,26 +689,24 @@
       tuiMeta.textContent = '0 items';
       return;
     }
-    const dirs = tuiFiles.filter((f) => f.type === 'directory').length;
-    const filesN = tuiFiles.filter((f) => f.type === 'file').length;
-    const total = tuiFiles.reduce((a, f) => a + (f.type === 'file' ? (f.size || 0) : 0), 0);
-    const parts = [];
-    if (dirs) parts.push(dirs + ' dir' + (dirs > 1 ? 's' : ''));
-    parts.push(filesN + ' file' + (filesN > 1 ? 's' : ''));
-    tuiMeta.textContent = parts.join(' · ') + ' · ' + fmtSize(total);
+    updateTuiMeta();
     tuiFiles.forEach((f, i) => {
       const row = document.createElement('div');
       row.className = 'tui-row' + (f.type === 'directory' ? ' dir' : '') + (f.type === 'up' ? ' up' : '');
       row.id = 'tui-row-' + i;
       row.dataset.i = i;
       row.setAttribute('role', 'option');
+      const marked = f.type === 'file' && tuiMarks.has(markPath(f));
+      const mk = document.createElement('span'); mk.className = 'mk';
+      mk.textContent = marked ? '✓' : '';
+      if (marked) row.classList.add('marked');
       const n = document.createElement('span'); n.className = 'n';
       n.textContent = f.type === 'directory' ? f.name + '/' : f.name;
       const z = document.createElement('span'); z.className = 's';
       z.textContent = f.type === 'directory' ? 'DIR' : f.type === 'file' ? fmtSize(f.size) : '';
       const d = document.createElement('span'); d.className = 'd';
       d.textContent = f.type === 'up' ? '' : fmtDate(f.mtime);
-      row.append(n, z, d);
+      row.append(mk, n, z, d);
       tuiList.append(row);
     });
     selectRow(tuiSel, true);
@@ -629,6 +748,8 @@
     if (dlg.classList.contains('tui')) return;
     dlg.classList.add('tui');
     tuiPath = [];
+    tuiMarks.clear();
+    closeConfirm(false);
     loadTui();
     tuiList.focus({ preventScroll: true });
   }
@@ -637,12 +758,25 @@
     if (!dlg.classList.contains('tui')) return;
     dlg.classList.remove('tui');
     tuiPath = [];
+    tuiMarks.clear();
+    closeConfirm(false);
     input.focus({ preventScroll: true });
     body.scrollTop = body.scrollHeight;
   }
 
   dlg.addEventListener('keydown', (e) => {
     if (!dlg.classList.contains('tui')) return;
+    if (confirmEl.classList.contains('on')) {
+      const ck = e.key.toLowerCase();
+      if (ck === 'y') { e.preventDefault(); confirmYes.click(); }
+      else if (ck === 'n' || e.key === 'Escape') { e.preventDefault(); closeConfirm(); }
+      else if (e.key === 'Enter') { e.preventDefault(); confirmYes.click(); }
+      else if (e.key === 'Tab') {
+        e.preventDefault();
+        (document.activeElement === confirmYes ? confirmNo : confirmYes).focus();
+      }
+      return;
+    }
     const onButton = !!e.target.closest('button');
     const ctrl = e.ctrlKey || e.metaKey;
     const k = e.key;
@@ -660,7 +794,12 @@
     else if (k === 'Enter') {
       if (onButton) return;
       e.preventDefault();
-      openSelected();
+      if (tuiMarks.size) askDownload(); else openSelected();
+    }
+    else if (k === ' ') {
+      if (onButton) return;
+      e.preventDefault();
+      toggleMark(tuiSel);
     }
     else if (ctrl && (k === 'r' || k === 'R')) { e.preventDefault(); loadTui(); }
     else if (ctrl && (k === 'q' || k === 'Q')) { e.preventDefault(); exitTui(); }
@@ -669,7 +808,25 @@
     const row = e.target.closest('.tui-row');
     if (!row) return;
     const i = Number(row.dataset.i);
-    if (i === tuiSel) { downloadRow(); return; }
+    const f = tuiFiles[i];
+    if (!f) return;
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      selectRow(i, false);
+      toggleMark(i);
+      tuiList.focus({ preventScroll: true });
+      return;
+    }
+    if (tuiMarks.size) {
+      tuiMarks.clear();
+      tuiList.querySelectorAll('.tui-row.marked').forEach((r) => {
+        r.classList.remove('marked');
+        const mk = r.querySelector('.mk');
+        if (mk) mk.textContent = '';
+      });
+      updateTuiMeta();
+    }
+    if (i === tuiSel && f.type === 'file') { downloadRow(); return; }
     selectRow(i, false);
     tuiList.focus({ preventScroll: true });
   });
@@ -831,6 +988,14 @@
       first.focus({ preventScroll: true });
     }
   });
+  confirmYes.addEventListener('click', () => {
+    closeConfirm(false);
+    downloadMarked();
+    tuiList.focus({ preventScroll: true });
+  });
+  confirmNo.addEventListener('click', () => closeConfirm());
+  confirmEl.addEventListener('click', (e) => { if (e.target === confirmEl) closeConfirm(); });
+
   closeBtn.addEventListener('click', closeTerm);
   maxBtn.addEventListener('click', () => setMax(!maximized));
   dlg.querySelector('.term-bar').addEventListener('dblclick', (e) => {
