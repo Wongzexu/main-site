@@ -69,6 +69,8 @@
     outline-offset:12px;
     border-radius:14px;
   }
+  /* 终端关闭后把焦点还给图标，但不画焦点框；用 Tab 导航时再恢复 */
+  html.quiet-focus .mac-link:focus-visible .mac{outline:none}
   /* 图标背后的柔光：青绿 + 暖橙 */
   .halo{
     position:absolute;
@@ -464,7 +466,17 @@
     e.preventDefault();
     input.focus({ preventScroll: true });
   });
-  dlg.addEventListener('close', () => { link.focus({ preventScroll: true }); });
+  // 静默聚焦：焦点回到图标，但不显示焦点框（否则键盘 exit 后会多一个方框）
+  dlg.addEventListener('close', () => {
+    document.documentElement.classList.add('quiet-focus');
+    link.focus({ preventScroll: true });
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab') document.documentElement.classList.remove('quiet-focus');
+  }, true);
+  document.addEventListener('pointerdown', () => {
+    document.documentElement.classList.remove('quiet-focus');
+  }, true);
   link.addEventListener('click', (e) => {
     if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
