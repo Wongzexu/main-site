@@ -171,10 +171,37 @@
     background:#0E1E1A;
     border-bottom:1px solid rgba(120,230,200,.12);
   }
-  .term-bar .dot{width:10px;height:10px;border-radius:50%;background:#3B524B}
-  .term-bar .dot:nth-child(1){background:#E5695B}
-  .term-bar .dot:nth-child(2){background:#E0B354}
-  .term-bar .dot:nth-child(3){background:#5FBF7A}
+  .dot{
+    flex:none;
+    width:10px;
+    height:10px;
+    padding:0;
+    border:0;
+    border-radius:50%;
+    background:#3B524B;
+  }
+  .dot.red{background:#E5695B}
+  .dot.yellow{background:#E0B354}
+  .dot.green{background:#5FBF7A}
+  /* 左上角红点：扩大点击热区，视觉仍是 10px */
+  button.dot{position:relative;cursor:pointer}
+  button.dot::after{content:"";position:absolute;inset:-9px;border-radius:50%}
+  button.dot:focus-visible{outline:2px solid rgba(255,255,255,.75);outline-offset:3px}
+  /* macOS 手感：悬停标题栏时红点里浮出 × */
+  .dot.red::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    display:grid;
+    place-items:center;
+    font-size:9px;
+    line-height:1;
+    font-weight:700;
+    color:rgba(70,12,8,.75);
+    opacity:0;
+    transition:opacity .15s;
+  }
+  .term-bar:hover .dot.red::before{content:"×";opacity:1}
   .term-title{
     margin-left:8px;
     flex:1;
@@ -185,20 +212,6 @@
     overflow:hidden;
     text-overflow:ellipsis;
   }
-  .term-close{
-    flex:none;
-    padding:2px 8px 4px;
-    border:0;
-    border-radius:6px;
-    background:transparent;
-    color:#7FB4A6;
-    font:inherit;
-    font-size:18px;
-    line-height:1;
-    cursor:pointer;
-  }
-  .term-close:hover{color:#DDFBF2;background:rgba(120,230,200,.10)}
-  .term-close:focus-visible{color:#DDFBF2;outline:2px solid rgba(95,227,201,.65);outline-offset:2px}
   .term-body{
     flex:1;
     min-height:0;
@@ -284,9 +297,10 @@
 <dialog id="termDlg" class="term-dialog" aria-labelledby="termTitle">
   <div class="term">
     <div class="term-bar">
-      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <button type="button" class="dot red" id="termClose" aria-label="关闭终端" title="关闭"></button>
+      <span class="dot yellow" aria-hidden="true"></span>
+      <span class="dot green" aria-hidden="true"></span>
       <span class="term-title" id="termTitle">sjdhqtl — terminal</span>
-      <button type="button" class="term-close" id="termClose" aria-label="关闭终端">×</button>
     </div>
     <div class="term-body" id="termBody">
       <div class="term-log" id="termLog" role="log" aria-live="polite" aria-label="终端输出"></div>
@@ -421,6 +435,21 @@
     const v = input.value;
     input.value = '';
     run(v);
+  });
+  // 模态框里只有「红点 + 输入框」两个可聚焦元素，显式循环，避免 Tab 落空
+  dlg.addEventListener('keydown', (e) => {
+    if (e.key !== 'Tab' || !dlg.open) return;
+    const first = closeBtn;
+    const last = input;
+    if (e.shiftKey) {
+      if (document.activeElement === first || !dlg.contains(document.activeElement)) {
+        e.preventDefault();
+        last.focus({ preventScroll: true });
+      }
+    } else if (document.activeElement === last || !dlg.contains(document.activeElement)) {
+      e.preventDefault();
+      first.focus({ preventScroll: true });
+    }
   });
   closeBtn.addEventListener('click', closeTerm);
   dlg.addEventListener('click', (e) => { if (e.target === dlg) closeTerm(); });
