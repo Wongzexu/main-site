@@ -288,7 +288,7 @@
 </head>
 <body>
 <main class="stage">
-  <a class="mac-link" href="/download.html" aria-label="打开终端" title="打开终端（输入 cd /dl 进入下载中心）">
+  <a class="mac-link" href="/download.html" aria-label="打开终端">
     <span class="halo" aria-hidden="true"></span>
     <svg class="mac" viewBox="0 0 30 32" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="麦金塔电脑像素图" shape-rendering="crispEdges">
   <defs>
@@ -404,6 +404,7 @@
       ['cd /', 'back to home (closes this window)'],
       ['exit', 'close this window'],
       ['clear', 'clear the screen'],
+      ['↑ / ↓', 'browse command history'],
     ];
     for (const [c, d] of cmds) rich([['  ' + c.padEnd(11), 'cmd'], [d, 'dim']]);
   }
@@ -473,11 +474,43 @@
     opening = false;
   }
 
+  // 命令历史：↑ 往前翻、↓ 往后翻，未提交的草稿会被保留
+  const history = [];
+  let histIdx = 0;
+  let draft = '';
+  const caretEnd = () => {
+    const n = input.value.length;
+    try { input.setSelectionRange(n, n); } catch {}
+  };
+  input.addEventListener('keydown', (e) => {
+    if (input.disabled) return;
+    if (e.key === 'ArrowUp') {
+      if (!history.length) return;
+      e.preventDefault();
+      if (histIdx === history.length) draft = input.value;
+      if (histIdx > 0) histIdx--;
+      input.value = history[histIdx];
+      caretEnd();
+    } else if (e.key === 'ArrowDown') {
+      if (histIdx >= history.length) return;
+      e.preventDefault();
+      histIdx++;
+      input.value = histIdx === history.length ? draft : history[histIdx];
+      caretEnd();
+    }
+  });
+
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     if (input.disabled) return;
     const v = input.value;
     input.value = '';
+    if (v.trim()) {
+      history.push(v);
+      if (history.length > 100) history.shift();
+    }
+    histIdx = history.length;
+    draft = '';
     run(v);
   });
   // 模态框里只有「红点 + 输入框」两个可聚焦元素，显式循环，避免 Tab 落空
