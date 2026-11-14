@@ -6,7 +6,7 @@
 ```
 main-site/
 ├── public/                # 部署的静态站源文件
-│   ├── index.html         # 主页（像素麦金塔入口）
+│   ├── index.html         # 主页（像素麦金塔 / 伪终端入口）
 │   ├── download.html      # 下载管理页（列表 / 二维码 / 删除）
 │   └── assets/qrcode.min.js
 ├── deploy.sh              # 同步到 /srv/downloads

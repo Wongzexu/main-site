@@ -105,11 +105,146 @@
     .mac-link{animation:none}
     .mac{transition:none}
   }
+
+  /* ===== 伪终端入口 ===== */
+  html.term-open,html.term-open body{overflow:hidden}
+
+  .term-dialog{
+    width:min(680px,92vw);
+    max-width:none;
+    max-height:86svh;
+    padding:0;
+    border:0;
+    background:transparent;
+    color:#CDEFE4;
+    overflow:visible;
+  }
+  .term-dialog::backdrop{
+    background:rgba(38,28,16,.26);
+    -webkit-backdrop-filter:blur(3px) saturate(.9);
+    backdrop-filter:blur(3px) saturate(.9);
+  }
+  .term-dialog[open]{animation:termIn .3s cubic-bezier(.2,.8,.2,1)}
+  .term-dialog.closing{animation:termOut .16s ease forwards}
+  @keyframes termIn{
+    from{opacity:0;transform:translateY(10px) scale(.94)}
+    to{opacity:1;transform:none}
+  }
+  @keyframes termOut{
+    to{opacity:0;transform:translateY(6px) scale(.97)}
+  }
+
+  .term{
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    height:min(56svh,400px);
+    border-radius:12px;
+    background:#08120F;
+    border:1px solid rgba(120,230,200,.22);
+    box-shadow:
+      0 34px 80px rgba(46,30,10,.34),
+      0 0 0 1px rgba(0,0,0,.22),
+      0 0 70px rgba(60,220,190,.10);
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono","Courier New",monospace;
+    font-size:13.5px;
+    line-height:1.65;
+    overflow:hidden;
+    color-scheme:dark;
+  }
+  /* CRT 扫描线 */
+  .term::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    z-index:2;
+    pointer-events:none;
+    background:repeating-linear-gradient(180deg,rgba(0,0,0,.18) 0 1px,transparent 1px 3px);
+    opacity:.5;
+  }
+  .term-bar{
+    display:flex;
+    align-items:center;
+    gap:7px;
+    flex:none;
+    padding:10px 12px;
+    background:#0E1E1A;
+    border-bottom:1px solid rgba(120,230,200,.12);
+  }
+  .term-bar .dot{width:10px;height:10px;border-radius:50%;background:#3B524B}
+  .term-bar .dot:nth-child(1){background:#E5695B}
+  .term-bar .dot:nth-child(2){background:#E0B354}
+  .term-bar .dot:nth-child(3){background:#5FBF7A}
+  .term-title{
+    margin-left:8px;
+    flex:1;
+    font-size:12px;
+    letter-spacing:.03em;
+    color:#7FB4A6;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .term-close{
+    flex:none;
+    padding:2px 8px 4px;
+    border:0;
+    border-radius:6px;
+    background:transparent;
+    color:#7FB4A6;
+    font:inherit;
+    font-size:18px;
+    line-height:1;
+    cursor:pointer;
+  }
+  .term-close:hover{color:#DDFBF2;background:rgba(120,230,200,.10)}
+  .term-close:focus-visible{color:#DDFBF2;outline:2px solid rgba(95,227,201,.65);outline-offset:2px}
+  .term-body{
+    flex:1;
+    min-height:0;
+    overflow:auto;
+    padding:14px 16px 16px;
+    background:radial-gradient(120% 90% at 50% 0%,rgba(50,200,170,.075),transparent 62%),#07100E;
+    text-shadow:0 0 10px rgba(95,227,201,.12);
+    overscroll-behavior:contain;
+  }
+  .ln{white-space:pre-wrap;word-break:break-word}
+  .dim{color:#6E9E90}
+  .cmd{color:#B9E9DC}
+  .ok{color:#7CF0D8}
+  .err{color:#FFA18D}
+  .term-line{
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+    margin-top:2px;
+  }
+  .prompt{flex:none;color:#5FE3C9;white-space:nowrap}
+  .term-line input{
+    flex:1;
+    min-width:0;
+    padding:0;
+    border:0;
+    outline:none;
+    background:none;
+    color:#E4FFF8;
+    font:inherit;
+    caret-color:#5FE3C9;
+  }
+  .term-line input:disabled{opacity:.45}
+  @media (max-width:520px){
+    .term{height:min(64svh,440px);font-size:16px}
+    .term-body{padding:12px}
+    .term-title{font-size:11px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .term-dialog[open],.term-dialog.closing{animation:none}
+  }
 </style>
 </head>
 <body>
 <main class="stage">
-  <a class="mac-link" href="/download.html" aria-label="进入下载中心" title="进入下载中心">
+  <a class="mac-link" href="/download.html" aria-label="打开终端" title="打开终端（输入 cd /dl 进入下载中心）">
     <span class="halo" aria-hidden="true"></span>
     <svg class="mac" viewBox="0 0 30 32" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="麦金塔电脑像素图" shape-rendering="crispEdges">
   <defs>
@@ -146,5 +281,157 @@
 </svg>
   </a>
 </main>
+<dialog id="termDlg" class="term-dialog" aria-labelledby="termTitle">
+  <div class="term">
+    <div class="term-bar">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+      <span class="term-title" id="termTitle">sjdhqtl — terminal</span>
+      <button type="button" class="term-close" id="termClose" aria-label="关闭终端">×</button>
+    </div>
+    <div class="term-body" id="termBody">
+      <div class="term-log" id="termLog" role="log" aria-live="polite" aria-label="终端输出"></div>
+      <form class="term-line" id="termForm">
+        <label class="prompt" for="termInput">admin@sjdhqtl:~$</label>
+        <input id="termInput" type="text" inputmode="text" enterkeyhint="go"
+               autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
+               aria-label="终端命令输入">
+      </form>
+    </div>
+  </div>
+</dialog>
+
+<script>
+(() => {
+  const dlg = document.getElementById('termDlg');
+  const log = document.getElementById('termLog');
+  const body = document.getElementById('termBody');
+  const form = document.getElementById('termForm');
+  const input = document.getElementById('termInput');
+  const closeBtn = document.getElementById('termClose');
+  const link = document.querySelector('.mac-link');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+  const PROMPT = 'admin@sjdhqtl:~$';
+  let opening = false;
+  let navigating = false;
+
+  function append(node) {
+    log.append(node);
+    while (log.childElementCount > 240) log.firstElementChild.remove();
+    body.scrollTop = body.scrollHeight;
+  }
+  function line(text, cls) {
+    const d = document.createElement('div');
+    d.className = 'ln' + (cls ? ' ' + cls : '');
+    d.textContent = text || '\u00a0';
+    append(d);
+  }
+  function rich(parts) {
+    const d = document.createElement('div');
+    d.className = 'ln';
+    for (const [text, cls] of parts) {
+      const s = document.createElement('span');
+      s.textContent = text;
+      if (cls) s.className = cls;
+      d.append(s);
+    }
+    append(d);
+  }
+
+  function help() {
+    line('available commands:');
+    const cmds = [
+      ['--help', 'show this help'],
+      ['ls', 'list directories'],
+      ['pwd', 'print working directory'],
+      ['cd /dl', 'enter the download center'],
+      ['cd /files', 'open the file list'],
+      ['cd /', 'back to home (closes this window)'],
+      ['clear', 'clear the screen'],
+    ];
+    for (const [c, d] of cmds) rich([['  ' + c.padEnd(11), 'cmd'], [d, 'dim']]);
+  }
+
+  function go(url, label) {
+    if (navigating) return;
+    navigating = true;
+    line('opening ' + label + ' ...', 'ok');
+    input.disabled = true;
+    setTimeout(() => { location.href = url; }, 520);
+  }
+
+  function closeTerm() {
+    if (navigating || !dlg.open) return;
+    document.documentElement.classList.remove('term-open');
+    if (reduce.matches) return dlg.close();
+    dlg.classList.add('closing');
+    setTimeout(() => { dlg.classList.remove('closing'); dlg.close(); }, 160);
+  }
+
+  function run(raw) {
+    const text = raw.trim();
+    if (!text) return line('', '');
+    line(PROMPT + ' ' + text, 'cmd');
+    const low = text.toLowerCase();
+
+    if (low === '--help' || low === 'help') return help();
+    if (low === 'ls') return line('/dl/   /files/', 'dim');
+    if (low === 'pwd') return line('/', 'dim');
+    if (low === 'clear') { log.replaceChildren(); return; }
+
+    const m = text.match(/^cd(?:\s+(.*))?$/i);
+    if (m) {
+      let raw2 = (m[1] || '').trim();
+      if (!raw2) raw2 = '~';
+      let p = raw2.toLowerCase();
+      if (p === '~' || p === '/' || p === '/~' || p === '~/') {
+        line('logout', 'dim');
+        return closeTerm();
+      }
+      p = p.replace(/\/+$/, '');
+      if (!p) p = '/';
+      if (p[0] !== '/') p = '/' + p;
+      if (p === '/dl') return go('/download.html', '/dl');
+      if (p === '/files') return go('/files/', '/files/');
+      return line('cd: no such file or directory: ' + raw2, 'err');
+    }
+
+    line('command not found: ' + text.split(/\s+/)[0], 'err');
+  }
+
+  function openTerm() {
+    if (dlg.open || opening) return;
+    opening = true;
+    navigating = false;
+    log.replaceChildren();
+    input.value = '';
+    input.disabled = false;
+    // 同步 showModal + focus：iOS 只允许用户手势内唤起软键盘
+    dlg.showModal();
+    document.documentElement.classList.add('term-open');
+    line('SJDHQTL OS 1.0  (tty0)', 'dim');
+    line('type --help for available commands', 'dim');
+    line('', '');
+    input.focus({ preventScroll: true });
+    opening = false;
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (input.disabled) return;
+    const v = input.value;
+    input.value = '';
+    run(v);
+  });
+  closeBtn.addEventListener('click', closeTerm);
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) closeTerm(); });
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); closeTerm(); });
+  dlg.addEventListener('close', () => { link.focus({ preventScroll: true }); });
+  link.addEventListener('click', (e) => {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    openTerm();
+  });
+})();
+</script>
 </body>
 </html>
