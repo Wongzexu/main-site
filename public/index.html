@@ -386,7 +386,7 @@
     box-shadow:0 18px 50px rgba(0,0,0,.5),0 0 40px rgba(50,200,170,.12);
   }
   .tui-confirm-title{font-size:11px;letter-spacing:.16em;color:#5FE3C9;margin-bottom:10px}
-  .tui-confirm-text{color:#DDFBF2;font-size:13.5px;line-height:1.6;margin-bottom:14px;word-break:break-word}
+  .tui-confirm-text{color:#DDFBF2;font-size:13.5px;line-height:1.6;margin-bottom:14px;word-break:break-word;white-space:pre-line}
   .tui-confirm-text .f{color:#8FD9C8}
   .tui-confirm-actions{display:flex;gap:8px}
   .tui-btn{
@@ -404,11 +404,55 @@
   .tui-btn.primary{border-color:#5FE3C9;background:rgba(95,227,201,.18);color:#E6FFF8}
   .tui-btn b{color:#5FE3C9}
 
+  /* ===== manage TUI ===== */
+  .term-manage{display:none;flex:1;min-height:0;flex-direction:column}
+  .term-dialog.manage .term-log,
+  .term-dialog.manage .term-line{display:none}
+  .term-dialog.manage .term-tui{display:none}
+  .term-dialog.manage .term-manage{display:flex}
+  .term-dialog.manage .term-body{display:flex;flex-direction:column;overflow:hidden}
+  .term-dialog.manage:not(.max){width:min(920px,94vw);height:min(620px,84svh)}
+  .manage-head{align-items:center}
+  .manage-head .mng-user{color:#5FE3C9;font-weight:600;letter-spacing:.04em;margin-left:6px}
+  .manage-wrap{display:grid;grid-template-columns:minmax(0,1fr) 200px;gap:12px;flex:1;min-height:0}
+  .manage-main{display:flex;flex-direction:column;min-width:0;min-height:0}
+  .manage-cols,.manage-list .tui-row{grid-template-columns:16px minmax(0,1fr) 72px 104px;gap:10px}
+  .manage-list{flex:1;min-height:0}
+  .manage-preview{border-left:1px solid rgba(95,227,201,.14);padding:3px 2px 4px 12px;overflow:auto;color:#7FB4A6;font-size:12px;min-width:0;scrollbar-width:thin;scrollbar-color:rgba(95,227,201,.35) transparent}
+  .pv-title{font-size:10px;letter-spacing:.16em;color:#54786E;margin-bottom:8px}
+  .pv-row{display:flex;flex-direction:column;gap:1px;margin-bottom:9px}
+  .pv-k{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#54786E}
+  .pv-v{color:#CDEFE4;font-size:12.5px;word-break:break-all;white-space:pre-wrap}
+  .pv-v.dim{color:#6E9E90}
+  .pv-hint{margin-top:10px;color:#54786E;font-size:11px;line-height:1.5}
+  .manage-foot{gap:6px 14px}
+  /* 登录 / 二维码弹窗 */
+  .tui-login-box{width:min(380px,100%)}
+  .tui-field{display:flex;align-items:center;gap:10px;margin-bottom:9px}
+  .tui-field>span{flex:none;width:62px;font-size:10.5px;letter-spacing:.12em;color:#54786E;text-transform:uppercase}
+  .tui-field input{flex:1;min-width:0;padding:6px 8px;border:1px solid rgba(95,227,201,.3);border-radius:4px;background:#050D0B;color:#E4FFF8;font:inherit;font-size:13px;outline:none}
+  .tui-field input:focus{border-color:#5FE3C9;box-shadow:0 0 0 1px rgba(95,227,201,.25)}
+  .tui-login-err{min-height:17px;margin:1px 0 9px;color:#FFA18D;font-size:11.5px}
+  .tui-qr-box{width:min(330px,100%);text-align:center}
+  .qr-name{color:#8FD9C8;font-size:12px;word-break:break-all;margin-bottom:10px}
+  .qr-canvas{display:flex;justify-content:center;background:#fff;border-radius:4px;padding:8px}
+  .qr-canvas img,.qr-canvas canvas{display:block;max-width:100%;height:auto}
+  .qr-url{color:#54786E;font-size:10px;word-break:break-all;margin-top:10px}
+  .tui-qr-box .tui-confirm-actions{margin-top:12px}
+
+  @media (max-width:640px){
+    .manage-wrap{grid-template-columns:minmax(0,1fr)}
+    .manage-preview{display:none}
+    .term-dialog.manage:not(.max){height:min(74svh,560px)}
+  }
   @media (max-width:520px){
     .term-dialog{height:min(64svh,440px)}
     .term{font-size:16px}
     .tui-cols,.tui-row{grid-template-columns:18px minmax(0,1fr) 84px}
     .tui-cols span:nth-child(3),.tui-row .d{display:none}
+    .manage-cols,.manage-list .tui-row{grid-template-columns:16px minmax(0,1fr) 74px}
+    .manage-cols span:nth-child(3){display:inline}
+    .manage-cols span:nth-child(4),.manage-list .tui-row .d{display:none}
     .term-body{padding:12px}
     .term-title{font-size:11px}
   }
@@ -508,14 +552,67 @@
           <span><b>⏎</b> open</span>
           <span><b>⌫</b> up</span>
           <span><b>Space</b> / <b>Ctrl+click</b> mark</span>
+          <span><b>Ctrl+⏎</b> download marked</span>
           <span><b>Ctrl+R</b> refresh</span>
           <span><b>Ctrl+Q</b> back</span>
+        </div>
+      </div>
+      <div class="term-manage" id="termManage">
+        <div class="tui-head manage-head">
+          <span>SJDHQTL <b id="managePath">/dl</b><span class="mng-user" id="manageUser"></span></span>
+          <span id="manageMeta">login required</span>
+        </div>
+        <div class="manage-wrap">
+          <div class="manage-main">
+            <div class="tui-cols manage-cols" aria-hidden="true"><span></span><span>name</span><span>size</span><span>modified</span></div>
+            <div class="tui-list manage-list" id="manageList" tabindex="0" role="listbox" aria-multiselectable="true" aria-label="文件管理列表"></div>
+          </div>
+          <aside class="manage-preview" aria-label="文件详情">
+            <div class="pv-title">DETAIL</div>
+            <div id="managePreview"></div>
+          </aside>
+        </div>
+        <div class="tui-foot manage-foot">
+          <span><b>↑↓</b> select</span>
+          <span><b>⏎</b> open</span>
+          <span><b>⌫</b> up</span>
+          <span><b>Space</b> mark</span>
+          <span><b>a</b> all</span>
+          <span><b>c</b> clear</span>
+          <span><b>d</b> delete</span>
+          <span><b>q</b> qr</span>
+          <span><b>Ctrl+R</b> refresh</span>
+          <span><b>Ctrl+Q</b> back</span>
+        </div>
+        <div class="tui-confirm tui-login" id="manageLogin">
+          <form class="tui-confirm-box tui-login-box" id="manageLoginForm" role="dialog" aria-modal="true" aria-labelledby="manageLoginTitle">
+            <div class="tui-confirm-title" id="manageLoginTitle">AUTH / DOWNLOAD MANAGER</div>
+            <label class="tui-field"><span>user</span><input id="manageUserName" type="text" value="admin" autocomplete="username" spellcheck="false"></label>
+            <label class="tui-field"><span>password</span><input id="managePassword" type="password" autocomplete="current-password"></label>
+            <div class="tui-login-err" id="manageLoginErr"></div>
+            <div class="tui-confirm-actions">
+              <button type="submit" class="tui-btn primary" id="manageLoginYes"><b>⏎</b> login</button>
+              <button type="button" class="tui-btn" id="manageLoginNo"><b>esc</b> cancel</button>
+            </div>
+          </form>
+        </div>
+        <div class="tui-confirm tui-qr" id="manageQr">
+          <div class="tui-confirm-box tui-qr-box" role="dialog" aria-modal="true" aria-labelledby="manageQrName">
+            <div class="tui-confirm-title">QR / DOWNLOAD</div>
+            <div class="qr-name" id="manageQrName"></div>
+            <div class="qr-canvas" id="manageQrBox"></div>
+            <div class="qr-url" id="manageQrUrl"></div>
+            <div class="tui-confirm-actions">
+              <button type="button" class="tui-btn primary" id="manageQrClose"><b>esc</b> close</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </dialog>
 
+<script src="/assets/qrcode.min.js"></script>
 <script>
 (() => {
   const dlg = document.getElementById('termDlg');
@@ -524,6 +621,7 @@
   const form = document.getElementById('termForm');
   const input = document.getElementById('termInput');
   const closeBtn = document.getElementById('termClose');
+  const termTitleEl = document.getElementById('termTitle');
   const tui = document.getElementById('termTui');
   const confirmEl = document.getElementById('tuiConfirm');
   const confirmText = document.getElementById('tuiConfirmText');
@@ -531,6 +629,23 @@
   const confirmNo = document.getElementById('tuiConfirmNo');
   const tuiList = document.getElementById('tuiList');
   const tuiMeta = document.getElementById('tuiMeta');
+  const manageList = document.getElementById('manageList');
+  const manageMeta = document.getElementById('manageMeta');
+  const managePathEl = document.getElementById('managePath');
+  const manageUserEl = document.getElementById('manageUser');
+  const managePreview = document.getElementById('managePreview');
+  const manageLoginEl = document.getElementById('manageLogin');
+  const manageLoginForm = document.getElementById('manageLoginForm');
+  const manageUserNameInput = document.getElementById('manageUserName');
+  const managePasswordInput = document.getElementById('managePassword');
+  const manageLoginErr = document.getElementById('manageLoginErr');
+  const manageLoginBtn = document.getElementById('manageLoginYes');
+  const manageLoginCancel = document.getElementById('manageLoginNo');
+  const manageQrEl = document.getElementById('manageQr');
+  const manageQrName = document.getElementById('manageQrName');
+  const manageQrBox = document.getElementById('manageQrBox');
+  const manageQrUrl = document.getElementById('manageQrUrl');
+  const manageQrClose = document.getElementById('manageQrClose');
   const link = document.querySelector('.mac-link');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
   const PROMPT = 'admin@sjdhqtl:~$';
@@ -567,6 +682,14 @@
   let tuiSeq = 0;
   let tuiPath = [];
   const tuiMarks = new Set();
+  let manageFiles = [];
+  let manageSel = 0;
+  let manageSeq = 0;
+  let managePath = [];
+  const manageMarks = new Set();
+  let manageAuth = null;
+  let manageUserName = 'admin';
+  let confirmAction = null;
   const tuiPathEl = document.getElementById('tuiPath');
   const tuiWhere = () => '/dl' + (tuiPath.length ? '/' + tuiPath.join('/') : '');
   const markPath = (f) => [...tuiPath, f.name].join('/');
@@ -621,22 +744,42 @@
     updateTuiMeta();
   }
 
-  function askDownload() {
-    const n = tuiMarks.size;
-    if (!n) return;
-    confirmText.textContent = 'download ' + n + ' marked file' + (n > 1 ? 's' : '') + '?';
+  function clearMarks() {
+    tuiMarks.clear();
+    tuiList.querySelectorAll('.tui-row.marked').forEach((r) => {
+      r.classList.remove('marked');
+      const mk = r.querySelector('.mk');
+      if (mk) mk.textContent = '';
+    });
+    updateTuiMeta();
+  }
+
+  function openConfirm(text, label, onYes) {
+    confirmText.textContent = text;
+    confirmYes.innerHTML = '<b>y</b> ' + label;
+    confirmAction = onYes;
     confirmEl.classList.add('on');
     confirmYes.focus({ preventScroll: true });
   }
 
   function closeConfirm(refocus = true) {
     confirmEl.classList.remove('on');
-    if (refocus) tuiList.focus({ preventScroll: true });
+    confirmAction = null;
+    if (!refocus) return;
+    const target = dlg.classList.contains('manage') ? manageList : tuiList;
+    if (target) target.focus({ preventScroll: true });
+  }
+
+  function askDownload() {
+    const n = tuiMarks.size;
+    if (!n) return;
+    openConfirm('download ' + n + ' marked file' + (n > 1 ? 's' : '') + '?', 'download', downloadMarked);
   }
 
   function downloadMarked() {
     const paths = [...tuiMarks];
     if (!paths.length) return;
+    clearMarks();
     tuiMeta.textContent = 'downloading ' + paths.length + ' file' + (paths.length > 1 ? 's' : '') + '…';
     paths.forEach((rel, i) => {
       setTimeout(() => {
@@ -715,6 +858,9 @@
   async function loadTui() {
     const seq = ++tuiSeq;
     const where = tuiWhere();
+    tuiFiles = [];
+    tuiSel = 0;
+    tuiPathEl.textContent = where;
     tuiMeta.textContent = 'loading…';
     tuiList.replaceChildren();
     const e = document.createElement('div');
@@ -735,10 +881,11 @@
           : a.type === 'directory' ? -1 : 1));
       tuiFiles = tuiPath.length ? [{ name: '..', type: 'up' }, ...items] : items;
       tuiSel = 0;
-      tuiPathEl.textContent = where;
       renderTui();
     } catch (err) {
       if (seq !== tuiSeq) return;
+      tuiFiles = [];
+      tuiSel = 0;
       tuiMeta.textContent = 'failed to load';
       e.textContent = 'failed to load ' + where + ' — ' + err.message;
     }
@@ -757,6 +904,8 @@
   function exitTui() {
     if (!dlg.classList.contains('tui')) return;
     dlg.classList.remove('tui');
+    tuiSeq++;
+    tuiFiles = [];
     tuiPath = [];
     tuiMarks.clear();
     closeConfirm(false);
@@ -766,17 +915,6 @@
 
   dlg.addEventListener('keydown', (e) => {
     if (!dlg.classList.contains('tui')) return;
-    if (confirmEl.classList.contains('on')) {
-      const ck = e.key.toLowerCase();
-      if (ck === 'y') { e.preventDefault(); confirmYes.click(); }
-      else if (ck === 'n' || e.key === 'Escape') { e.preventDefault(); closeConfirm(); }
-      else if (e.key === 'Enter') { e.preventDefault(); confirmYes.click(); }
-      else if (e.key === 'Tab') {
-        e.preventDefault();
-        (document.activeElement === confirmYes ? confirmNo : confirmYes).focus();
-      }
-      return;
-    }
     const onButton = !!e.target.closest('button');
     const ctrl = e.ctrlKey || e.metaKey;
     const k = e.key;
@@ -794,7 +932,7 @@
     else if (k === 'Enter') {
       if (onButton) return;
       e.preventDefault();
-      if (tuiMarks.size) askDownload(); else openSelected();
+      if (ctrl && tuiMarks.size) askDownload(); else openSelected();
     }
     else if (k === ' ') {
       if (onButton) return;
@@ -817,19 +955,464 @@
       tuiList.focus({ preventScroll: true });
       return;
     }
-    if (tuiMarks.size) {
-      tuiMarks.clear();
-      tuiList.querySelectorAll('.tui-row.marked').forEach((r) => {
-        r.classList.remove('marked');
-        const mk = r.querySelector('.mk');
-        if (mk) mk.textContent = '';
-      });
-      updateTuiMeta();
+    if (f.type === 'directory' || f.type === 'up') {
+      selectRow(i, false);
+      openSelected();
+      tuiList.focus({ preventScroll: true });
+      return;
     }
+    if (tuiMarks.size) clearMarks();
     if (i === tuiSel && f.type === 'file') { downloadRow(); return; }
     selectRow(i, false);
     tuiList.focus({ preventScroll: true });
   });
+
+  // ---------- manage TUI ----------
+  const manageWhere = () => '/dl' + (managePath.length ? '/' + managePath.join('/') : '');
+  const manageRel = (f) => [...managePath, f.name].join('/');
+
+  function basicAuth(user, pw) {
+    const bytes = new TextEncoder().encode(user + ':' + pw);
+    let bin = '';
+    for (const b of bytes) bin += String.fromCharCode(b);
+    return 'Basic ' + btoa(bin);
+  }
+
+  function randomToken() {
+    try { if (crypto.randomUUID) return crypto.randomUUID(); } catch {}
+    return Date.now().toString(36) + Math.random().toString(36).slice(2);
+  }
+
+  function overlayOpen() {
+    return confirmEl.classList.contains('on') || manageLoginEl.classList.contains('on') || manageQrEl.classList.contains('on');
+  }
+
+  function setManageMeta(text) {
+    manageMeta.textContent = text;
+  }
+
+  function selectManageRow(i, scroll) {
+    if (!manageFiles.length) { renderManagePreview(); return; }
+    manageSel = Math.max(0, Math.min(manageFiles.length - 1, i));
+    const rows = manageList.querySelectorAll('.tui-row');
+    rows.forEach((r, j) => {
+      const on = j === manageSel;
+      r.classList.toggle('sel', on);
+      r.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+    manageList.setAttribute('aria-activedescendant', 'manage-row-' + manageSel);
+    if (scroll && rows[manageSel]) rows[manageSel].scrollIntoView({ block: 'nearest' });
+    renderManagePreview();
+  }
+
+  function updateManageMeta() {
+    if (!manageFiles.length) { setManageMeta(manageAuth ? '0 items' : 'login required'); return; }
+    const dirs = manageFiles.filter((f) => f.type === 'directory').length;
+    const filesN = manageFiles.filter((f) => f.type === 'file').length;
+    const total = manageFiles.reduce((a, f) => a + (f.type === 'file' ? (f.size || 0) : 0), 0);
+    const parts = [];
+    if (dirs) parts.push(dirs + ' dir' + (dirs > 1 ? 's' : ''));
+    parts.push(filesN + ' file' + (filesN > 1 ? 's' : ''));
+    if (manageMarks.size) parts.push(manageMarks.size + ' marked');
+    setManageMeta(parts.join(' · ') + ' · ' + fmtSize(total));
+  }
+
+  function pvRow(label, value, dim) {
+    const row = document.createElement('div');
+    row.className = 'pv-row';
+    const k = document.createElement('span'); k.className = 'pv-k'; k.textContent = label;
+    const v = document.createElement('span'); v.className = 'pv-v' + (dim ? ' dim' : ''); v.textContent = value;
+    row.append(k, v);
+    return row;
+  }
+
+  function renderManagePreview() {
+    managePreview.replaceChildren();
+    const f = manageFiles[manageSel];
+    if (!f) {
+      managePreview.append(pvRow('selection', '—', true));
+      managePreview.append(pvRow('marked', String(manageMarks.size), true));
+      return;
+    }
+    if (f.type === 'up') {
+      managePreview.append(pvRow('type', 'parent directory', true));
+      managePreview.append(pvRow('path', manageWhere(), true));
+    } else if (f.type === 'directory') {
+      managePreview.append(pvRow('type', 'directory', true));
+      managePreview.append(pvRow('name', f.name + '/'));
+      managePreview.append(pvRow('path', manageWhere()));
+      managePreview.append(pvRow('modified', fmtDate(f.mtime) || '—', true));
+    } else {
+      const rel = manageRel(f);
+      managePreview.append(pvRow('type', 'file', true));
+      managePreview.append(pvRow('name', f.name));
+      managePreview.append(pvRow('size', fmtSize(f.size)));
+      managePreview.append(pvRow('modified', fmtDate(f.mtime) || '—'));
+      managePreview.append(pvRow('path', rel));
+      managePreview.append(pvRow('link', location.origin + hrefOf(rel)));
+      if (manageMarks.has(rel)) managePreview.append(pvRow('marked', 'yes'));
+    }
+    managePreview.append(pvRow('marked files', String(manageMarks.size), true));
+    if (f.type === 'file') {
+      const hint = document.createElement('div');
+      hint.className = 'pv-hint';
+      hint.textContent = 'space mark · q qr · d delete';
+      managePreview.append(hint);
+    }
+  }
+
+  function renderManage() {
+    manageList.replaceChildren();
+    if (!manageFiles.length) {
+      const e = document.createElement('div');
+      e.className = 'tui-empty';
+      e.textContent = manageAuth ? 'empty directory' : 'login required';
+      manageList.append(e);
+      updateManageMeta();
+      renderManagePreview();
+      return;
+    }
+    updateManageMeta();
+    manageFiles.forEach((f, i) => {
+      const row = document.createElement('div');
+      row.className = 'tui-row' + (f.type === 'directory' ? ' dir' : '') + (f.type === 'up' ? ' up' : '');
+      row.id = 'manage-row-' + i;
+      row.dataset.i = i;
+      row.setAttribute('role', 'option');
+      const rel = f.type === 'file' ? manageRel(f) : '';
+      const marked = f.type === 'file' && manageMarks.has(rel);
+      if (marked) row.classList.add('marked');
+      const mk = document.createElement('span'); mk.className = 'mk'; mk.textContent = marked ? '✓' : '';
+      const n = document.createElement('span'); n.className = 'n'; n.textContent = f.type === 'directory' ? f.name + '/' : f.name;
+      const z = document.createElement('span'); z.className = 's'; z.textContent = f.type === 'directory' ? 'DIR' : f.type === 'file' ? fmtSize(f.size) : '';
+      const d = document.createElement('span'); d.className = 'd'; d.textContent = f.type === 'up' ? '' : fmtDate(f.mtime);
+      row.append(mk, n, z, d);
+      manageList.append(row);
+    });
+    selectManageRow(manageSel, true);
+  }
+
+  async function loadManage() {
+    const seq = ++manageSeq;
+    const where = manageWhere();
+    manageFiles = [];
+    manageSel = 0;
+    managePathEl.textContent = where;
+    manageUserEl.textContent = manageAuth ? manageAuth.user : '';
+    if (!manageAuth) {
+      renderManage();
+      return;
+    }
+    setManageMeta('loading…');
+    manageList.replaceChildren();
+    const loading = document.createElement('div');
+    loading.className = 'tui-empty';
+    loading.textContent = 'loading…';
+    manageList.append(loading);
+    const sub = managePath.map(encodeURIComponent).join('/');
+    try {
+      const r = await fetch('/api/list/' + (sub ? sub + '/' : ''), { headers: { Accept: 'application/json' } });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const arr = await r.json();
+      if (seq !== manageSeq) return;
+      const items = arr
+        .filter((x) => x.type === 'file' || x.type === 'directory')
+        .map((x) => ({ name: x.name, type: x.type, size: x.size, mtime: x.mtime }))
+        .sort((a, b) => (a.type === b.type
+          ? a.name.localeCompare(b.name, 'zh')
+          : a.type === 'directory' ? -1 : 1));
+      manageFiles = managePath.length ? [{ name: '..', type: 'up' }, ...items] : items;
+      manageSel = 0;
+      renderManage();
+    } catch (err) {
+      if (seq !== manageSeq) return;
+      manageFiles = [];
+      manageSel = 0;
+      setManageMeta('failed to load');
+      loading.textContent = 'failed to load ' + where + ' — ' + err.message;
+      renderManagePreview();
+    }
+  }
+
+  function toggleManageMark(i) {
+    const f = manageFiles[i];
+    if (!f || f.type !== 'file') return;
+    const rel = manageRel(f);
+    if (manageMarks.has(rel)) manageMarks.delete(rel); else manageMarks.add(rel);
+    const row = manageList.querySelector('.tui-row[data-i="' + i + '"]');
+    if (row) {
+      row.classList.toggle('marked', manageMarks.has(rel));
+      const mk = row.querySelector('.mk');
+      if (mk) mk.textContent = manageMarks.has(rel) ? '✓' : '';
+    }
+    updateManageMeta();
+    renderManagePreview();
+  }
+
+  function clearManageMarks() {
+    manageMarks.clear();
+    manageList.querySelectorAll('.tui-row.marked').forEach((r) => {
+      r.classList.remove('marked');
+      const mk = r.querySelector('.mk');
+      if (mk) mk.textContent = '';
+    });
+    updateManageMeta();
+    renderManagePreview();
+  }
+
+  function markAllManage() {
+    manageFiles.forEach((f) => { if (f.type === 'file') manageMarks.add(manageRel(f)); });
+    renderManage();
+  }
+
+  function openManageSelected() {
+    const f = manageFiles[manageSel];
+    if (!f) return;
+    if (f.type === 'up') { managePath.pop(); loadManage(); return; }
+    if (f.type === 'directory') { managePath.push(f.name); loadManage(); return; }
+    location.href = hrefOf(manageRel(f));
+  }
+
+  function showManageQr() {
+    const f = manageFiles[manageSel];
+    if (!f || f.type !== 'file') { setManageMeta('select a file'); return; }
+    const rel = manageRel(f);
+    const url = location.origin + hrefOf(rel);
+    manageQrName.textContent = f.name;
+    manageQrUrl.textContent = url;
+    manageQrBox.replaceChildren();
+    if (typeof QRCode === 'undefined') {
+      manageQrBox.textContent = 'QR module not loaded';
+    } else {
+      new QRCode(manageQrBox, { text: url, width: 220, height: 220, correctLevel: QRCode.CorrectLevel.M });
+    }
+    manageQrEl.classList.add('on');
+    manageQrClose.focus({ preventScroll: true });
+  }
+
+  function closeManageQr(refocus = true) {
+    manageQrEl.classList.remove('on');
+    manageQrBox.replaceChildren();
+    if (refocus && dlg.classList.contains('manage')) manageList.focus({ preventScroll: true });
+  }
+
+  function requestManageDelete() {
+    let targets;
+    if (manageMarks.size) {
+      targets = [...manageMarks];
+    } else {
+      const f = manageFiles[manageSel];
+      if (!f || f.type !== 'file') { setManageMeta('select a file to delete'); return; }
+      targets = [manageRel(f)];
+    }
+    const shown = targets.slice(0, 6).map((p) => '  ' + p).join('\n');
+    const more = targets.length > 6 ? '\n  … +' + (targets.length - 6) : '';
+    const text = 'delete ' + targets.length + ' file' + (targets.length > 1 ? 's' : '') + '?\n' + shown + more;
+    openConfirm(text, 'delete', () => deleteManageFiles(targets));
+  }
+
+  async function deleteManageFiles(paths) {
+    if (!manageAuth) { showManageLogin(); return; }
+    setManageMeta('deleting…');
+    let ok = 0, fail = 0, authFailed = false;
+    for (const rel of paths) {
+      try {
+        const r = await fetch(hrefOf(rel), { method: 'DELETE', headers: { Authorization: manageAuth.header } });
+        if (r.ok || r.status === 204) { ok++; manageMarks.delete(rel); }
+        else if (r.status === 401) { authFailed = true; break; }
+        else fail++;
+      } catch { fail++; }
+    }
+    if (authFailed) {
+      manageAuth = null;
+      manageUserEl.textContent = '';
+      if (dlg.classList.contains('manage')) showManageLogin('登录已失效，请重新输入密码');
+      return;
+    }
+    if (!dlg.classList.contains('manage')) return;
+    await loadManage();
+    if (!dlg.classList.contains('manage')) return;
+    setManageMeta('deleted ' + ok + (fail ? ' · failed ' + fail : ''));
+  }
+
+  function showManageLogin(message) {
+    closeConfirm(false);
+    manageLoginErr.textContent = message || '';
+    if (!manageUserNameInput.value) manageUserNameInput.value = manageUserName;
+    managePasswordInput.value = '';
+    manageLoginEl.classList.add('on');
+    managePasswordInput.focus({ preventScroll: true });
+  }
+
+  function closeManageLogin(refocus = true) {
+    manageLoginEl.classList.remove('on');
+    manageLoginErr.textContent = '';
+    if (refocus && dlg.classList.contains('manage')) manageList.focus({ preventScroll: true });
+  }
+
+  function cancelManageLogin() {
+    manageLoginEl.classList.remove('on');
+    manageLoginErr.textContent = '';
+    exitManage();
+  }
+
+  async function submitManageLogin() {
+    const user = manageUserNameInput.value.trim() || 'admin';
+    const pw = managePasswordInput.value;
+    if (!user || !pw) { manageLoginErr.textContent = '请输入用户名和密码'; return; }
+    manageLoginBtn.disabled = true;
+    manageLoginErr.textContent = 'checking…';
+    const header = basicAuth(user, pw);
+    try {
+      const r = await fetch(hrefOf('__auth_check_' + randomToken() + '__'), {
+        method: 'DELETE',
+        headers: { Authorization: header }
+      });
+      if (r.status === 401) { manageLoginErr.textContent = '用户名或密码错误'; return; }
+      if (!(r.ok || r.status === 404)) { manageLoginErr.textContent = '验证失败: HTTP ' + r.status; return; }
+      if (!dlg.classList.contains('manage') || !manageLoginEl.classList.contains('on')) return;
+      manageAuth = { user, header };
+      manageUserName = user;
+      managePasswordInput.value = '';
+      manageUserEl.textContent = user;
+      closeManageLogin(false);
+      manageList.focus({ preventScroll: true });
+      loadManage();
+    } catch (err) {
+      manageLoginErr.textContent = '连接失败: ' + err.message;
+    } finally {
+      manageLoginBtn.disabled = false;
+    }
+  }
+
+  function enterManage(sub = []) {
+    dlg.classList.remove('tui');
+    dlg.classList.add('manage');
+    termTitleEl.textContent = 'sjdhqtl — manage';
+    manageSeq++;
+    manageFiles = [];
+    manageSel = 0;
+    managePath = sub.slice();
+    manageMarks.clear();
+    closeConfirm(false);
+    managePathEl.textContent = manageWhere();
+    manageUserEl.textContent = manageAuth ? manageAuth.user : '';
+    if (!manageAuth) {
+      renderManage();
+      showManageLogin();
+      return;
+    }
+    loadManage();
+    manageList.focus({ preventScroll: true });
+  }
+
+  function exitManage(focus = true) {
+    if (!dlg.classList.contains('manage')) return;
+    dlg.classList.remove('manage');
+    termTitleEl.textContent = 'sjdhqtl — terminal';
+    manageSeq++;
+    manageFiles = [];
+    manageSel = 0;
+    managePath = [];
+    manageMarks.clear();
+    closeManageLogin(false);
+    closeManageQr(false);
+    closeConfirm(false);
+    if (focus) {
+      input.focus({ preventScroll: true });
+      body.scrollTop = body.scrollHeight;
+    }
+  }
+
+  function resetManage() {
+    dlg.classList.remove('manage');
+    termTitleEl.textContent = 'sjdhqtl — terminal';
+    manageSeq++;
+    manageAuth = null;
+    manageFiles = [];
+    manageSel = 0;
+    managePath = [];
+    manageMarks.clear();
+    closeManageLogin(false);
+    closeManageQr(false);
+  }
+
+  dlg.addEventListener('keydown', (e) => {
+    if (!dlg.classList.contains('manage')) return;
+    if (overlayOpen()) return;
+    const onButton = !!e.target.closest('button');
+    const ctrl = e.ctrlKey || e.metaKey;
+    const k = e.key;
+    if (k === 'ArrowDown') { e.preventDefault(); selectManageRow(manageSel + 1, true); }
+    else if (k === 'ArrowUp') { e.preventDefault(); selectManageRow(manageSel - 1, true); }
+    else if (k === 'Home') { e.preventDefault(); selectManageRow(0, true); }
+    else if (k === 'End') { e.preventDefault(); selectManageRow(manageFiles.length - 1, true); }
+    else if (k === 'PageDown') { e.preventDefault(); selectManageRow(manageSel + 10, true); }
+    else if (k === 'PageUp') { e.preventDefault(); selectManageRow(manageSel - 10, true); }
+    else if (k === 'Backspace' && managePath.length) { e.preventDefault(); managePath.pop(); loadManage(); }
+    else if (k === 'Enter') { if (onButton) return; e.preventDefault(); openManageSelected(); }
+    else if (k === ' ') { if (onButton) return; e.preventDefault(); toggleManageMark(manageSel); }
+    else if (ctrl && (k === 'r' || k === 'R')) { e.preventDefault(); loadManage(); }
+    else if (ctrl && (k === 'q' || k === 'Q')) { e.preventDefault(); exitManage(); }
+    else if (k === 'Escape') { e.preventDefault(); exitManage(); }
+    else if (onButton) return;
+    else if (k === 'a' || k === 'A') { e.preventDefault(); markAllManage(); }
+    else if (k === 'c' || k === 'C') { e.preventDefault(); clearManageMarks(); }
+    else if (k === 'd' || k === 'D' || k === 'Delete') { e.preventDefault(); requestManageDelete(); }
+    else if (k === 'q' || k === 'Q') { e.preventDefault(); showManageQr(); }
+  });
+
+  manageList.addEventListener('click', (e) => {
+    const row = e.target.closest('.tui-row');
+    if (!row) return;
+    const i = Number(row.dataset.i);
+    const f = manageFiles[i];
+    if (!f) return;
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      selectManageRow(i, false);
+      toggleManageMark(i);
+      manageList.focus({ preventScroll: true });
+      return;
+    }
+    if (f.type === 'directory' || f.type === 'up') {
+      selectManageRow(i, false);
+      openManageSelected();
+      manageList.focus({ preventScroll: true });
+      return;
+    }
+    selectManageRow(i, false);
+    manageList.focus({ preventScroll: true });
+  });
+
+  manageLoginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    submitManageLogin();
+  });
+  manageLoginCancel.addEventListener('click', cancelManageLogin);
+  manageQrClose.addEventListener('click', () => closeManageQr());
+  manageQrEl.addEventListener('click', (e) => { if (e.target === manageQrEl) closeManageQr(); });
+
+  dlg.addEventListener('keydown', (e) => {
+    if (manageLoginEl.classList.contains('on')) {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); cancelManageLogin(); }
+      return;
+    }
+    if (manageQrEl.classList.contains('on')) {
+      if (e.key === 'Escape' || e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); closeManageQr(); }
+      return;
+    }
+    if (!confirmEl.classList.contains('on')) return;
+    const ck = e.key.toLowerCase();
+    if (ck === 'y') { e.preventDefault(); confirmYes.click(); }
+    else if (ck === 'n' || e.key === 'Escape') { e.preventDefault(); closeConfirm(); }
+    else if (e.key === 'Enter') { e.preventDefault(); confirmYes.click(); }
+    else if (e.key === 'Tab') {
+      e.preventDefault();
+      (document.activeElement === confirmYes ? confirmNo : confirmYes).focus();
+    }
+    e.stopPropagation();
+  }, true);
 
   function help() {
     line('available commands:');
@@ -863,15 +1446,21 @@
     const label = on ? '还原' : '最大化';
     maxBtn.setAttribute('aria-label', label);
     maxBtn.title = label;
-    if (focus) {
-      input.focus({ preventScroll: true });
-      body.scrollTop = body.scrollHeight;
+    if (focus && !overlayOpen()) {
+      const target = dlg.classList.contains('manage') ? manageList : dlg.classList.contains('tui') ? tuiList : input;
+      if (target) target.focus({ preventScroll: true });
+      if (!dlg.classList.contains('tui') && !dlg.classList.contains('manage')) body.scrollTop = body.scrollHeight;
     }
   }
 
   function closeTerm() {
     if (navigating || !dlg.open) return;
     document.documentElement.classList.remove('term-open');
+    tuiSeq++;
+    tuiFiles = [];
+    tuiMarks.clear();
+    resetManage();
+    closeConfirm(false);
     if (reduce.matches) return dlg.close();
     dlg.classList.add('closing');
     setTimeout(() => { dlg.classList.remove('closing'); dlg.close(); }, 160);
@@ -888,6 +1477,16 @@
     if (low === 'ls') return line('/dl/   /files/', 'dim');
     if (low === 'pwd') return line('/', 'dim');
     if (low === 'clear') { log.replaceChildren(); return; }
+
+    const mm = text.match(/^manage(?:\s+(.*))?$/i);
+    if (mm) {
+      const arg = (mm[1] || '').trim();
+      if (!arg) return line('usage: manage /dl', 'dim');
+      const p = arg.replace(/\/+$/, '');
+      if (!/^\/dl(?:\/|$)/i.test(p)) return line('manage: only /dl is supported', 'err');
+      const sub = p.length > 3 ? p.slice(4).split('/').filter((x) => x && x !== '.' && x !== '..') : [];
+      return enterManage(sub);
+    }
 
     const m = text.match(/^cd(?:\s+(.*))?$/i);
     if (m) {
@@ -918,6 +1517,9 @@
     tuiSeq++;
     tuiFiles = [];
     tuiPath = [];
+    tuiMarks.clear();
+    resetManage();
+    closeConfirm(false);
     log.replaceChildren();
     input.value = '';
     input.disabled = false;
@@ -970,10 +1572,20 @@
     draft = '';
     run(v);
   });
-  // 模态框里只有「红点 + 输入框」两个可聚焦元素，显式循环，避免 Tab 落空
+  // 模态框内显式循环 Tab，避免落在遮罩后的元素上
   dlg.addEventListener('keydown', (e) => {
     if (e.key !== 'Tab' || !dlg.open) return;
-    const els = [closeBtn, maxBtn, tuiList, input].filter((el) => el.offsetParent !== null && !el.disabled);
+    let els;
+    if (manageLoginEl.classList.contains('on')) {
+      els = [manageUserNameInput, managePasswordInput, manageLoginBtn, manageLoginCancel];
+    } else if (manageQrEl.classList.contains('on')) {
+      els = [manageQrClose];
+    } else if (confirmEl.classList.contains('on')) {
+      els = [confirmYes, confirmNo];
+    } else {
+      els = [closeBtn, maxBtn, tuiList, manageList, input];
+    }
+    els = els.filter((el) => el.offsetParent !== null && !el.disabled);
     if (!els.length) return;
     const first = els[0];
     const last = els[els.length - 1];
@@ -989,9 +1601,11 @@
     }
   });
   confirmYes.addEventListener('click', () => {
+    const fn = confirmAction;
     closeConfirm(false);
-    downloadMarked();
-    tuiList.focus({ preventScroll: true });
+    if (fn) fn();
+    const target = dlg.classList.contains('manage') ? manageList : tuiList;
+    if (target) target.focus({ preventScroll: true });
   });
   confirmNo.addEventListener('click', () => closeConfirm());
   confirmEl.addEventListener('click', (e) => { if (e.target === confirmEl) closeConfirm(); });
@@ -1002,14 +1616,19 @@
     if (e.target.closest('button')) return;
     setMax(!maximized);
   });
-  // 点外部区域不关闭，只把焦点送回提示符；退出只有「红点」或 exit / cd /
+  // 点外部区域不关闭，只把焦点送回当前视图；退出只有「红点」或 exit / cd /
   dlg.addEventListener('click', (e) => {
+    if (overlayOpen()) return;
     if (e.target === dlg || (body.contains(e.target) && !closeBtn.contains(e.target))) {
-      input.focus({ preventScroll: true });
+      const target = dlg.classList.contains('manage') ? manageList : dlg.classList.contains('tui') ? tuiList : input;
+      if (target) target.focus({ preventScroll: true });
     }
   });
   dlg.addEventListener('cancel', (e) => {
     e.preventDefault();
+    if (manageLoginEl.classList.contains('on')) return cancelManageLogin();
+    if (manageQrEl.classList.contains('on')) return closeManageQr();
+    if (confirmEl.classList.contains('on')) return closeConfirm();
     input.focus({ preventScroll: true });
   });
   // 静默聚焦：焦点回到图标，但不显示焦点框（否则键盘 exit 后会多一个方框）

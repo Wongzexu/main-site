@@ -58,6 +58,13 @@ const USER = 'admin';
 const KEY = 'dl_pass';
 const rows = document.getElementById('rows');
 
+function basicAuth(user, pw){
+  const bytes = new TextEncoder().encode(user + ':' + pw);
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return 'Basic ' + btoa(bin);
+}
+
 function fmt(n){
   if(!n) return '0 B';
   if(n < 1024) return n + ' B';
@@ -138,7 +145,7 @@ async function del(name){
   if (!confirm('确定删除 ' + name + ' ?')) return;
   const r = await fetch('/files/' + encodeURIComponent(name), {
     method: 'DELETE',
-    headers: {Authorization: 'Basic ' + btoa(USER + ':' + pw)}
+    headers: {Authorization: basicAuth(USER, pw)}
   });
   if (r.ok || r.status === 204) {
     load();

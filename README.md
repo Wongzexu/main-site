@@ -24,6 +24,24 @@ main-site/
 ```
 脚本会 `rsync public/ -> /srv/downloads/`，并排除 `files/`、`*.bak.*`；随后统一目录 755、文件 644。
 
+## nginx：/dl 子目录列表
+`/dl` 进入子目录时会请求 `/api/list/<子目录>/`，nginx 必须用前缀匹配（`location = /api/list/` 只能列根目录）：
+
+```nginx
+location ^~ /api/list/ {
+    alias /srv/downloads/files/;
+    autoindex on;
+    autoindex_format json;
+    autoindex_exact_size off;
+    autoindex_localtime on;
+    types { }
+    default_type application/json;
+    add_header Cache-Control "no-store";
+}
+```
+
+改完执行 `sudo nginx -t && sudo systemctl reload nginx`。
+
 ## 权限约定
 | 路径 | 属主:组 | 权限 |
 |---|---|---|
@@ -33,6 +51,14 @@ main-site/
 | `/etc/nginx/conf.d/downloads.conf` | root:root | 644 |
 
 nginx worker 用户是 `nginx`。改站点文件用 dever 即可；改 nginx 配置才需要 sudo。
+
+## `/dl` 操作
+- `↑` `↓` / `Home` `End` / `PageUp` `PageDown` 选择，`Enter` 打开目录或下载选中文件
+- `Space` 或 `Ctrl+点击` 标记，`Ctrl+Enter` 下载已标记文件
+- `Backspace` 返回上级，`Ctrl+R` 刷新，`Ctrl+Q` 返回终端
+- 鼠标点击目录直接进入；点击已选中的文件直接下载
+
+批量下载由浏览器逐个触发，可能被“多文件下载”权限拦截；需要稳定批量下载时建议服务端打包 ZIP。
 
 ## 相关
 - 主页：https://sjdhqtl.cloud/
