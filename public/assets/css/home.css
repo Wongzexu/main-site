@@ -89,31 +89,40 @@
     transform:translateY(-5px) scale(1.02);
     filter:drop-shadow(0 8px 10px rgba(112,84,48,.10));
   }
-  /* CRT 光束：悬停时匀速自上而下扫过屏幕，进出时淡入淡出 */
+  /* 屏幕效果整体淡入淡出，内部扫描只暂停，不销毁动画实例。 */
+  .crt-effects{opacity:0;transition:opacity .28s ease;pointer-events:none}
   .crt-sweep,.crt-pulse{opacity:0}
   @media (hover:hover){
-    .mac-link:hover .crt-sweep{
-      animation:crtMove 2.6s linear infinite, crtFade 2.6s linear infinite;
+    .crt-sweep{
+      animation:crtMove 3.8s linear infinite, crtFade 3.8s ease-in-out infinite;
+      animation-play-state:paused;
     }
-    .mac-link:hover .crt-pulse{animation:crtPulse 2.6s linear infinite}
+    .crt-pulse{
+      animation:crtPulse 3.8s ease-in-out infinite;
+      animation-play-state:paused;
+    }
+    .mac-link:hover .crt-effects{opacity:1}
+    .mac-link:hover .crt-sweep,
+    .mac-link:hover .crt-pulse{animation-play-state:running}
   }
-  /* 终端打开时，背后的图标不再跑动画 */
-  html.term-open .mac-link:hover .crt-sweep,
-  html.term-open .mac-link:hover .crt-pulse{animation:none;opacity:0}
-  /* 位移匀速；透明度单独走「先缓后急」的曲线 */
+  /* 完全关闭模态框后才恢复悬浮效果。 */
+  html.term-open .mac-link .crt-effects{opacity:0}
+  html.term-open .mac-link .crt-sweep,
+  html.term-open .mac-link .crt-pulse{animation-play-state:paused}
+  /* 扫描匀速下行；尾段留白，在不可见时回到起点，避免循环跳闪。 */
   @keyframes crtMove{
     0%{transform:translateY(1px)}
-    100%{transform:translateY(12px)}
+    84%,100%{transform:translateY(12px)}
   }
   @keyframes crtFade{
-    0%{opacity:0;animation-timing-function:cubic-bezier(.5,0,.85,.38)}
-    30%{opacity:.5}
-    70%{opacity:.5;animation-timing-function:cubic-bezier(.5,0,.85,.38)}
-    100%{opacity:0}
+    0%,84%,100%{opacity:0}
+    12%{opacity:.14}
+    28%,58%{opacity:.34}
+    76%{opacity:.10}
   }
   @keyframes crtPulse{
-    0%,100%{opacity:0}
-    50%{opacity:.055}
+    0%,84%,100%{opacity:0}
+    40%{opacity:.035}
   }
   .mac-link:active .mac{
     transform:translateY(-1px) scale(.995);
@@ -124,7 +133,7 @@
   }
   @media (prefers-reduced-motion:reduce){
     .mac-link{animation:none}
-    .mac{transition:none}
+    .mac,.crt-effects{transition:none}
   }
 
   /* ===== 伪终端入口 ===== */
@@ -451,6 +460,7 @@
   @media (prefers-reduced-motion:reduce){
     .term-dialog,.term{transition:none}
     .term-dialog[open],.term-dialog.closing{animation:none}
-    .mac-link:hover .crt-sweep,
-    .mac-link:hover .crt-pulse{animation:none;opacity:0}
+    .mac-link:hover .crt-effects{opacity:0}
+    .mac-link .crt-sweep,
+    .mac-link .crt-pulse{animation:none;opacity:0}
   }
