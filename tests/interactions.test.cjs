@@ -118,6 +118,69 @@ test('confirmation identifies selection scope and includes every path', () => {
   assert.match(text, /current.txt/);
 });
 
+function terminalCloseContext({ reduceMotion = false } = {}) {
+  const classes = new Set();
+  const htmlClasses = new Set();
+  const listeners = {};
+  const timers = [];
+  const context = {
+    manageDeleting: false, navigating: false, tuiSeq: 0, tuiFiles: [], tuiMarks: new Set(['x']),
+    reduce: { matches: reduceMotion }, resetManage() {}, closeConfirm() {},
+    document: { documentElement: { classList: {
+      add: value => htmlClasses.add(value),
+      remove: value => htmlClasses.delete(value),
+      contains: value => htmlClasses.has(value),
+    } } },
+    link: { focus() {} },
+    setTimeout: fn => timers.push(fn),
+    dlg: {
+      open: true,
+      classList: {
+        contains: value => classes.has(value),
+        add: value => classes.add(value),
+        remove: value => classes.delete(value),
+      },
+      addEventListener: (type, fn) => (listeners[type] ||= []).push(fn),
+      close() {
+        this.open = false;
+        classes.delete('closing');
+        (listeners.close || []).forEach(fn => fn());
+      },
+    },
+  };
+  vm.createContext(context);
+  vm.runInContext(section('  function closeTerm() {', '  function run(raw) {'), context);
+  vm.runInContext(section("  dlg.addEventListener('close', () => {", "  document.addEventListener('keydown'"), context);
+  return { context, classes, htmlClasses, timers };
+}
+
+test('terminal close keeps hover effects suppressed until the dialog closes', () => {
+  const c = terminalCloseContext();
+  c.htmlClasses.add('term-open');
+  c.context.closeTerm();
+  assert.equal(c.context.dlg.open, true);
+  assert.ok(c.classes.has('closing'));
+  assert.ok(c.htmlClasses.has('term-open'));
+  const seq = c.context.tuiSeq;
+  c.context.closeTerm();
+  assert.equal(c.timers.length, 1);
+  assert.equal(c.context.tuiSeq, seq);
+  c.timers[0]();
+  assert.equal(c.context.dlg.open, false);
+  assert.equal(c.classes.has('closing'), false);
+  assert.equal(c.htmlClasses.has('term-open'), false);
+  assert.ok(c.htmlClasses.has('quiet-focus'));
+});
+
+test('terminal close under reduced motion clears term-open without waiting', () => {
+  const c = terminalCloseContext({ reduceMotion: true });
+  c.htmlClasses.add('term-open');
+  c.context.closeTerm();
+  assert.equal(c.timers.length, 0);
+  assert.equal(c.context.dlg.open, false);
+  assert.equal(c.htmlClasses.has('term-open'), false);
+});
+
 test('mock deletion resolves nested files and never removes directories', { skip: !fs.existsSync('dev-server.mjs') }, () => {
   const files = [{ name: 'dir', type: 'directory', children: [{ name: 'file', type: 'file' }] }];
   let status;

@@ -902,8 +902,7 @@
 
   function closeTerm() {
     if (manageDeleting) return;
-    if (navigating || !dlg.open) return;
-    document.documentElement.classList.remove('term-open');
+    if (navigating || !dlg.open || dlg.classList.contains('closing')) return;
     tuiSeq++;
     tuiFiles = [];
     tuiMarks.clear();
@@ -1082,6 +1081,7 @@
   });
   // 静默聚焦：焦点回到图标，但不显示焦点框（否则键盘 exit 后会多一个方框）
   dlg.addEventListener('close', () => {
+    document.documentElement.classList.remove('term-open');
     document.documentElement.classList.add('quiet-focus');
     link.focus({ preventScroll: true });
   });
@@ -1091,6 +1091,12 @@
   document.addEventListener('pointerdown', () => {
     document.documentElement.classList.remove('quiet-focus');
   }, true);
+  link.addEventListener('pointerenter', () => {
+    link.querySelectorAll('.crt-sweep,.crt-pulse').forEach((el) => {
+      if (typeof el.getAnimations !== 'function') return;
+      el.getAnimations().forEach((anim) => { anim.currentTime = 0; });
+    });
+  });
   link.addEventListener('click', (e) => {
     if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
