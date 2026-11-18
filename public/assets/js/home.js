@@ -1091,6 +1091,12 @@
   document.addEventListener('pointerdown', () => {
     document.documentElement.classList.remove('quiet-focus');
   }, true);
+  link.addEventListener('pointerenter', () => {
+    link.querySelectorAll('.crt-sweep,.crt-pulse').forEach((el) => {
+      if (typeof el.getAnimations !== 'function') return;
+      el.getAnimations().forEach((anim) => { anim.currentTime = 0; });
+    });
+  });
   link.addEventListener('click', (e) => {
     if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
